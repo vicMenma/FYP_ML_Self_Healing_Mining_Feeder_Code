@@ -6,6 +6,9 @@
 **Supervisor:** Mr Charles Kasonde
 **Year:** 2026
 
+**Repository:** https://github.com/vicMenma/FYP_ML_Self_Healing_Mining_Feeder_Code
+**Thesis release:** [`v1.0-thesis-submission`](https://github.com/vicMenma/FYP_ML_Self_Healing_Mining_Feeder_Code/releases/tag/v1.0-thesis-submission)
+
 This repository accompanies the final year project (FYP) thesis of the same title. It contains the MATLAB/Simulink source code, output summaries, and figures used to produce the results reported in the thesis. The code is published here primarily for **reproducibility** and to keep the printed thesis appendices to a reasonable length.
 
 ---
@@ -126,7 +129,8 @@ If you refer to this work, please cite the thesis:
 
 > Chimundu, V. C. (2026). *Simulation-Based Design and Evaluation of a Machine Learning-Assisted Self-Healing Protection Scheme for a 33/11 kV Mining Distribution Feeder*. BEng Electrical Engineering Final Year Project, Copperstone University. Supervisor: Mr Charles Kasonde.
 
-Please also reference the repository release tag used for your reproduction (e.g. `v1.0-thesis-submission`).
+Please also reference the repository release used for your reproduction:
+[`v1.0-thesis-submission`](https://github.com/vicMenma/FYP_ML_Self_Healing_Mining_Feeder_Code/releases/tag/v1.0-thesis-submission).
 
 ---
 
