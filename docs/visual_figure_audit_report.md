@@ -29,14 +29,24 @@ collide to pHash 0 are **not** falsely matched):
 
 ## 2. Summary
 
-- Thesis images extracted: **41** (40 captioned figures + 1 uncaptioned cover image)
-- GitHub figures scanned: **40**
-- EXACT matches: **30**  |  LIKELY: **0**  |  POSSIBLE: **0**  |  NO MATCH: **10**
-- GitHub figures USED in thesis: **30**
-- GitHub figures DUPLICATE of a used figure: **0**
-- GitHub figures UNUSED (high-confidence, archived to `outputs/figures_unused/`): **6**
-- GitHub figures needing MANUAL REVIEW (held, not moved): **4**
-- Thesis figures NOT present in the repository: **10**
+**First pass (repository-only audit):**
+
+- **40 captioned thesis figures** were extracted from the `.docx` (plus 1 uncaptioned cover image = 41 images).
+- GitHub figures scanned (first pass): **40**
+- **30** thesis figures were already **EXACT matches** in the repository (LIKELY: 0, POSSIBLE: 0).
+- **10** thesis figures were **missing from the repository** during the first audit (Fig 3.12, 4.1–4.9).
+- GitHub figures USED in thesis: **30**;  DUPLICATE of a used figure: **0**.
+- Unused/duplicate figures were **archived** in `outputs/figures_unused/`: **6** high-confidence unused + **4** dataset diagnostics (see §7–§8).
+
+**Second pass (full project-folder recovery — this update):**
+
+- A recursive search of the **whole** project folder scanned **50** candidate images (`.png/.jpg/.jpeg/.tif/.tiff/.bmp`).
+- **9 of the 10** missing figures (Fig 4.1–4.9) were **recovered as byte-identical source files** from `Project matlab/simulink/` (manual Simulink/scope/parameter-dialog screenshots).
+- **1 of the 10** (Fig 3.12, IDMT TCC benchmark) had **no source file on disk** and was **extracted directly from the thesis `.docx`**.
+- All 10 were copied into `outputs/figures/thesis_manual_captures/` with caption-based names (see **§11 Recovered Manual Thesis Figures**).
+- The 4 dataset diagnostic plots were moved to `outputs/figures_unused/dataset/`.
+
+**Net result:** all 40 captioned thesis figures now have a corresponding image tracked in the repository (30 script-generated + 10 manual captures).
 
 > **Note on numbering.** The figure numbers were re-organised between figure generation and the
 > final thesis, so repository filenames do **not** track thesis figure numbers. The matches below
@@ -88,12 +98,16 @@ collide to pHash 0 are **not** falsely matched):
 | 6.2 | Figure 6.2: Performance radar chart. | image40.png | `outputs/figures/ch6_conclusions/Fig6_2_performance_radar.png` | EXACT MATCH | 1.000 | 0 | 0.99 |
 | 6.3 | Figure 6.3: Future work roadmap. | image41.png | `outputs/figures/ch6_conclusions/Fig6_3_future_work_roadmap.png` | EXACT MATCH | 0.999 | 0 | 0.99 |
 
-## 4. Thesis figures NOT found in the GitHub repository
+## 4. Thesis figures NOT found in the GitHub repository (first pass)
 
-These figures appear in the thesis but have **no corresponding source image in the repository**.
-They are manually-captured Simulink model / parameter-dialog / scope screenshots that the committed
-scripts do not regenerate. (The closest-by-pixels repository image is listed only for reference; SSIM
-values are low, confirming they are *not* the same image.)
+These figures appear in the thesis but had **no corresponding source image in the repository** at the
+first pass. They are manually-captured Simulink model / parameter-dialog / scope screenshots that the
+committed scripts do not regenerate. (The closest-by-pixels repository image is listed only for
+reference; SSIM values are low, confirming they are *not* the same image.)
+
+> ✅ **Resolved in the second pass.** All 10 of these figures have since been recovered and added to
+> `outputs/figures/thesis_manual_captures/` — 9 as byte-identical files from `Project matlab/simulink/`,
+> and Fig 3.12 by extraction from the thesis `.docx`. See **§11 Recovered Manual Thesis Figures**.
 
 | Thesis Fig | Caption | Thesis image | Closest repo image (ref only) | SSIM |
 |---|---|---|---|---|
@@ -167,15 +181,16 @@ sub-folder structure; nothing deleted).
 ## 8. Manual review required (held — NOT moved)
 
 These repository images are **not** used in the thesis as-is, but they are early *diagnostic*
-renderings of data that the thesis **does** present through re-styled figures. Because they
-resemble a used figure they were conservatively left in place for human confirmation.
+renderings of data that the thesis **does** present through re-styled figures. They were held for
+human confirmation at the first pass and have now been **archived** to `outputs/figures_unused/dataset/`
+(moved, not deleted) since the thesis uses the final styled Chapter 5 versions instead.
 
-| GitHub file | Closest used concept (Thesis Fig) | SSIM | Note |
+| GitHub file (now archived) | Closest used concept (Thesis Fig) | SSIM | Note |
 |---|---|---|---|
-| `outputs/figures/dataset/dataset_class_dist.png` | 4.10 | 0.492 | alt rendering of class distribution (used: Fig 4.10) |
-| `outputs/figures/dataset/dataset_current_heatmap.png` | 5.3 | 0.752 | alt rendering of current heatmap (used: Fig 5.3) |
-| `outputs/figures/dataset/dataset_scatter_B2.png` | 3.12 | 0.116 | B2-specific diagnostic scatter (used: Fig 5.5 separability) |
-| `outputs/figures/dataset/dataset_voltage_heatmap.png` | 5.2 | 0.387 | alt rendering of voltage heatmap (used: Fig 5.2) |
+| `outputs/figures_unused/dataset/dataset_class_dist.png` | 4.10 | 0.492 | alt rendering of class distribution (used: Fig 4.10) |
+| `outputs/figures_unused/dataset/dataset_current_heatmap.png` | 5.3 | 0.752 | alt rendering of current heatmap (used: Fig 5.3) |
+| `outputs/figures_unused/dataset/dataset_scatter_B2.png` | 3.12 | 0.116 | B2-specific diagnostic scatter (used: Fig 5.5 separability) |
+| `outputs/figures_unused/dataset/dataset_voltage_heatmap.png` | 5.2 | 0.387 | alt rendering of voltage heatmap (used: Fig 5.2) |
 
 ## 9. Cover / non-figure image
 
@@ -186,8 +201,41 @@ resemble a used figure they were conservatively left in place for human confirma
 - `docs/figure_audit_contact_sheets/sheet1_thesis_vs_match.png` — every thesis figure beside its best GitHub match
 - `docs/figure_audit_contact_sheets/sheet2_unused.png` — GitHub figures with no thesis match (archived)
 - `docs/figure_audit_contact_sheets/sheet3_manual_review.png` — uncertain diagnostic plots vs their closest thesis figure
+- `docs/figure_audit_contact_sheets/sheet4_recovered_manual_figures.png` — each recovered figure (Fig 3.12, 4.1–4.9) beside its matched project-folder source
+
+## 11. Recovered Manual Thesis Figures
+
+Second-pass recovery. A recursive search of the **entire** project folder
+(`Project matlab/`, **50** images scanned: `.png/.jpg/.jpeg/.tif/.tiff/.bmp`) located the source
+images for the 10 figures that were missing at the first pass. Each was compared **visually** (pHash,
+dHash, aHash, SSIM, NCC) against every candidate — not by filename.
+
+- **9 of 10** (Fig 4.1–4.9) were found as **byte-identical** files in `Project matlab/simulink/`
+  (mean absolute pixel difference = 0.000, identical dimensions) and copied into the repository.
+- **1 of 10** (Fig 3.12) had **no source on disk** and was extracted directly from the thesis `.docx`.
+
+All recovered images were copied (originals untouched) into `outputs/figures/thesis_manual_captures/`
+with caption-based filenames:
+
+| Thesis Fig | Caption | Source found (in `Project matlab/`) | Destination in repo | SSIM | pHash | Match basis | Status |
+|---|---|---|---|---|---|---|---|
+| 3.12 | 3.12: IDMT TCC benchmark. | _thesis `.docx` (no file on disk)_ | `outputs/figures/thesis_manual_captures/Fig3_12_idmt_tcc_benchmark.png` | 0.116 | 0 | extracted from `.docx` | NO MATCH FOUND (no external source) |
+| 4.1 | 4.1: Simulink feeder model canvas. | `Project matlab/simulink/Screenshot 2026-03-07 051205.png` | `outputs/figures/thesis_manual_captures/Fig4_1_simulink_feeder_model_canvas.png` | 1.000 | 0 | identical bytes | EXACT MATCH |
+| 4.2 | 4.2: Source, transformer and breaker parameters | `Project matlab/simulink/Screenshot 2026-02-05 214308.png` | `outputs/figures/thesis_manual_captures/Fig4_2_source_transformer_breaker_parameters.png` | 1.000 | 0 | identical bytes | EXACT MATCH |
+| 4.3 | 4.3: Load block parameters. | `Project matlab/simulink/Screenshot 2026-02-05 214041.png` | `outputs/figures/thesis_manual_captures/Fig4_3_load_block_parameters.png` | 1.000 | 0 | identical bytes | EXACT MATCH |
+| 4.4 | 4.4: Fault block default settings. | `Project matlab/simulink/Screenshot 2026-02-05 213245.png` | `outputs/figures/thesis_manual_captures/Fig4_4_fault_block_default_settings.png` | 1.000 | 0 | identical bytes | EXACT MATCH |
+| 4.5 | 4.5: Switching-device parameter settings. | `Project matlab/simulink/Screenshot 2026-02-05 214425.png` | `outputs/figures/thesis_manual_captures/Fig4_5_switching_device_parameter_settings.png` | 1.000 | 0 | identical bytes | EXACT MATCH |
+| 4.6 | 4.6: Source and T1 healthy RMS outputs. | `Project matlab/simulink/Screenshot 2026-02-05 213355.png` | `outputs/figures/thesis_manual_captures/Fig4_6_source_and_T1_healthy_rms_outputs.png` | 1.000 | 0 | identical bytes | EXACT MATCH |
+| 4.7 | 4.7: Bus B4 and Bus B5 healthy RMS outputs. | `Project matlab/simulink/Screenshot 2026-02-05 213751.png` | `outputs/figures/thesis_manual_captures/Fig4_7_busB4_B5_healthy_rms_outputs.png` | 1.000 | 0 | identical bytes | EXACT MATCH |
+| 4.8 | 4.8: T2 supply-path RMS outputs. | `Project matlab/simulink/Screenshot 2026-02-05 213932.png` | `outputs/figures/thesis_manual_captures/Fig4_8_T2_supply_path_rms_outputs.png` | 1.000 | 0 | identical bytes | EXACT MATCH |
+| 4.9 | 4.9: Bus B2 and Bus B3 healthy RMS outputs. | `Project matlab/simulink/Screenshot 2026-02-05 213541.png` | `outputs/figures/thesis_manual_captures/Fig4_9_busB2_B3_healthy_rms_outputs.png` | 1.000 | 0 | identical bytes | EXACT MATCH |
+
+The four scope captures (Fig 4.6–4.9) are visually similar to one another, so each assignment was
+additionally confirmed to be **byte-identical** to its thesis image and to strictly out-score the
+nearest runner-up before being accepted. See `sheet4_recovered_manual_figures.png`.
 
 ---
 
-_All similarity scores are reproducible by re-running the audit script. No image was deleted;
-unused figures were moved (not removed) and remain in version control under `outputs/figures_unused/`._
+_All similarity scores are reproducible by re-running the audit script. No image was deleted; unused
+figures were moved (not removed) under `outputs/figures_unused/`, and recovered figures were **copied**
+from the project folder (originals untouched) into `outputs/figures/thesis_manual_captures/`._
