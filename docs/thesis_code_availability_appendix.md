@@ -7,7 +7,7 @@ To keep this thesis to a reasonable length, the full MATLAB and Simulink source 
 **Release tag:** `v1.0-thesis-submission`
 **Software:** MATLAB R2024a, with Simulink and Simscape Electrical (Specialized Power Systems)
 
-The release tagged above corresponds to the version of the code used to produce the figures and numerical results reported in this thesis. The repository contains the Simulink feeder model, the data-generation and training scripts, the self-healing/restoration routine, the figure-generation scripts, and the small result summaries.
+The release tagged above corresponds to the version of the code used to produce the figures and numerical results reported in this thesis. The repository contains the Simulink feeder model, the data-generation and training scripts, the self-healing/restoration routine, and the figure-generation scripts (all in `src/`); a lightweight CSV copy of the dataset (`outputs/dataset/fault_dataset_1000.csv`); the result summaries (`outputs/summaries/`); and the 40 figures used in the thesis, grouped by chapter and named after their official captions (`outputs/figures/thesis_final_named/`).
 
 ## Scripts Included
 

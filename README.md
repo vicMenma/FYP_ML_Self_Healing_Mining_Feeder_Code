@@ -9,7 +9,7 @@
 **Repository:** https://github.com/vicMenma/FYP_ML_Self_Healing_Mining_Feeder_Code
 **Thesis release:** [`v1.0-thesis-submission`](https://github.com/vicMenma/FYP_ML_Self_Healing_Mining_Feeder_Code/releases/tag/v1.0-thesis-submission)
 
-This repository accompanies the final year project (FYP) thesis of the same title. It contains the MATLAB/Simulink source code, output summaries, and figures used to produce the results reported in the thesis. The code is published here primarily for **reproducibility** and to keep the printed thesis appendices to a reasonable length.
+This repository is the code archive for the final year project (FYP) thesis of the same title. It contains the MATLAB/Simulink source code, the Simulink model, a lightweight copy of the dataset, the result summaries, and the 40 figures used in the thesis. It is published for **reproducibility** and to keep the printed thesis appendices to a reasonable length.
 
 ---
 
@@ -39,59 +39,42 @@ FYP_ML_Self_Healing_Mining_Feeder_Code/
 ├── README.md
 ├── LICENSE
 ├── .gitignore
-├── src/
-│   ├── MASTER_A_PREFLIGHT_AND_DATASET.m     % preflight + dataset generation
-│   ├── MASTER_B_TRAIN_AND_RESTORE.m         % training + evaluation + restoration
-│   ├── MASTER_C_GENERATE_ALL_FIGURES.m      % all thesis figures
-│   ├── RUN_ALL_PIPELINE.m                    % runs A → B → C in sequence
-│   ├── gen_fig5_14.m                         % helper for post-restoration voltage figure
-│   └── mining_feeder_layer_FINAL_baseline.slx  % Simulink feeder model
+├── src/                                       % MATLAB scripts + Simulink model
+│   ├── MASTER_A_PREFLIGHT_AND_DATASET.m        %   preflight + dataset generation
+│   ├── MASTER_B_TRAIN_AND_RESTORE.m            %   training + evaluation + restoration
+│   ├── MASTER_C_GENERATE_ALL_FIGURES.m         %   generates the thesis figures
+│   ├── RUN_ALL_PIPELINE.m                       %   runs A → B → C in sequence
+│   ├── gen_fig5_14.m                            %   helper for the post-restoration voltage figure
+│   └── mining_feeder_layer_FINAL_baseline.slx   %   Simulink feeder model
 ├── outputs/
 │   ├── dataset/
-│   │   └── fault_dataset_1000.csv           % lightweight CSV copy of the final dataset (inspection)
-│   ├── summaries/                           % small text/CSV result summaries
+│   │   └── fault_dataset_1000.csv              % lightweight CSV copy of the final dataset
+│   ├── summaries/                              % small text/CSV result summaries
 │   │   ├── rf_metrics_report.txt
 │   │   ├── restoration_summary.txt
 │   │   ├── restoration_results_full.csv
 │   │   └── pipeline_full_log.txt
-│   ├── figures/                             % figures that appear in the thesis (by chapter)
-│   │   ├── ch3_methodology/                 %   MATLAB-generated figures
-│   │   ├── ch4_system_design/
-│   │   ├── ch5_results/
-│   │   ├── ch6_conclusions/
-│   │   ├── simulink_model/                  %   exported Simulink model views
-│   │   ├── thesis_manual_captures/          %   manually captured Simulink/scope/model screenshots
-│   │   └── thesis_final_named/              %   curated copy of all 40 figures, renamed by thesis caption
-│   │       ├── chapter_3/  chapter_4/  chapter_5/  chapter_6/
-│   └── figures_unused/                      % superseded figures kept for audit traceability only
-│       ├── ch3_methodology/
-│       ├── ch4_system_design/
-│       └── dataset/
+│   └── figures/
+│       └── thesis_final_named/                 % the 40 thesis figures, named by official caption
+│           ├── chapter_3/                       %   Figure 3.1 – 3.12
+│           ├── chapter_4/                       %   Figure 4.1 – 4.11
+│           ├── chapter_5/                       %   Figure 5.1 – 5.14
+│           └── chapter_6/                       %   Figure 6.1 – 6.3
 └── docs/
-    ├── thesis_code_availability_appendix.md
-    ├── visual_figure_audit_report.md        % figure-by-figure visual audit vs the thesis
-    ├── thesis_final_figure_filename_map.md  % thesis caption -> original file -> curated file
-    └── figure_audit_contact_sheets/         % side-by-side contact sheets
+    ├── thesis_code_availability_appendix.md    % short appendix text for the thesis
+    └── thesis_final_figure_filename_map.md      % thesis figure number → caption → file
 ```
 
-The full simulation dataset can be regenerated from the Simulink model by running `MASTER_A_PREFLIGHT_AND_DATASET.m`. For convenience, a **lightweight CSV copy of the final dataset** (`outputs/dataset/fault_dataset_1000.csv`, ~0.4 MB) is included so the data can be inspected without re-running the simulations. The large generated artefacts (the trained model `rf_model_final.mat`, the binary dataset files `fault_dataset_1000.mat`/`.xlsx`, simulation checkpoints, and `matlab.mat`) are intentionally **not** committed — they are regenerable by running the scripts and are excluded by `.gitignore`. See the reproducibility notes below.
+---
 
-### Figures in this repository
+## Where Things Are
 
-The figures that appear in the thesis come from three sources, all collected under `outputs/figures/`:
+- **MATLAB scripts and the Simulink model** are in `src/`. The model is `src/mining_feeder_layer_FINAL_baseline.slx`.
+- **The lightweight dataset** is `outputs/dataset/fault_dataset_1000.csv` (~0.4 MB) — included so the data can be inspected without re-running the ~20-hour simulation.
+- **Result summaries** are in `outputs/summaries/` (classifier metrics, restoration results, run log).
+- **The thesis figures** are in `outputs/figures/thesis_final_named/`, grouped by chapter. These are the **40 figures used in the thesis**, each named according to its official thesis caption — for example `chapter_3/Figure_3_01_research_methodology_workflow.png` and `chapter_5/Figure_5_14_post_restoration_voltage_comparison.png`. The figure-number → caption → filename mapping is listed in [`docs/thesis_final_figure_filename_map.md`](docs/thesis_final_figure_filename_map.md).
 
-- **MATLAB-generated figures** — produced by `MASTER_C_GENERATE_ALL_FIGURES.m` (chapters `ch3_methodology/`, `ch4_system_design/`, `ch5_results/`, `ch6_conclusions/`) and the exported Simulink model views in `simulink_model/`.
-- **Manually captured screenshots** — Simulink model canvas, block parameter dialogs and scope/RMS outputs that are not regenerated by the scripts, collected in `thesis_manual_captures/` (these are the manual captures used for Figures 3.12 and 4.1–4.9).
-- **Archived unused figures** — `outputs/figures_unused/` holds earlier/alternate renderings that were **superseded by the final styled figures** and do **not** appear in the thesis. They are retained only for audit traceability (nothing is deleted).
-
-In summary:
-
-- `outputs/figures/` contains the **script-generated and recovered** figure files under their original (script/model) filenames.
-- `outputs/figures/thesis_final_named/` contains a **curated copy of the 40 thesis-used figures**, renamed to the official thesis captions (e.g. `chapter_3/Figure_3_01_research_methodology_workflow.png`) and grouped by chapter.
-- The original script-generated filenames are **kept unchanged** so that re-running the MATLAB scripts does not break reproducibility — the curated folder is a copy, not a rename of the originals.
-- Unused or superseded figures are archived under `outputs/figures_unused/` (moved, never deleted).
-
-A complete, image-by-image visual comparison of every thesis figure against these files — using perceptual hashing and SSIM rather than filenames — is documented in [`docs/visual_figure_audit_report.md`](docs/visual_figure_audit_report.md), with the figure→filename mapping in [`docs/thesis_final_figure_filename_map.md`](docs/thesis_final_figure_filename_map.md) and side-by-side contact sheets in `docs/figure_audit_contact_sheets/`.
+Large generated artefacts (the trained model `rf_model_final.mat`, the binary dataset files `fault_dataset_1000.mat`/`.xlsx`, simulation checkpoints, and `matlab.mat`) are intentionally **not** committed — they are fully regenerable by running the scripts and are excluded by `.gitignore`.
 
 ---
 
@@ -109,37 +92,37 @@ A complete, image-by-image visual comparison of every thesis figure against thes
    |-------|--------|---------|------------------|
    | 1 | `MASTER_A_PREFLIGHT_AND_DATASET.m` | Verify model, generate labelled fault dataset | ~16 h |
    | 2 | `MASTER_B_TRAIN_AND_RESTORE.m` | Train classifier, evaluate, run 36 restoration scenarios | ~3–4 h |
-   | 3 | `MASTER_C_GENERATE_ALL_FIGURES.m` | Generate all thesis figures | ~15 min |
+   | 3 | `MASTER_C_GENERATE_ALL_FIGURES.m` | Generate the thesis figures | ~15 min |
 
 `RUN_ALL_PIPELINE.m` includes skip logic: if a dataset or trained model from a previous run is already present, it offers to reuse it rather than regenerating from scratch.
 
 ---
 
-## Explanation of Each Main Script
+## What Each Main Script Does
 
 **`MASTER_A_PREFLIGHT_AND_DATASET.m`**
-Performs all preflight checks and generates the dataset. It confirms every required Simulink block and signal exists, applies a grounding-resistance correction so that SLG fault currents are physically reasonable, runs a short verification simulation, and then sweeps healthy and faulted conditions to build a 1000-sample labelled dataset (one healthy class plus twelve fault classes). It exports the dataset (`.mat`, `.csv`, `.xlsx`) and four diagnostic plots. Progress is checkpointed so a long run can resume.
+Performs all preflight checks and generates the dataset. It confirms every required Simulink block and signal exists, applies a grounding-resistance correction so that SLG fault currents are physically reasonable, runs a short verification simulation, and then sweeps healthy and faulted conditions to build a 1000-sample labelled dataset (one healthy class plus twelve fault classes). It exports the dataset and diagnostic plots. Progress is checkpointed so a long run can resume.
 
 **`MASTER_B_TRAIN_AND_RESTORE.m`**
-Loads the dataset and performs an 80/20 stratified split (`rng = 42`). It trains a cost-sensitive random forest (500 trees) and evaluates it with overall accuracy and a Wilson confidence interval, per-class precision/recall/F1 with bootstrap intervals, 5-fold cross-validation, a McNemar test against a baseline, and an ablation study. It then runs all 36 restoration scenarios (12 fault classes × 3 load levels), checks post-restoration voltages against the 0.95–1.05 pu limits, and writes the model, the metrics report, and the restoration result tables.
+Loads the dataset and performs an 80/20 stratified split (`rng = 42`). It trains a cost-sensitive random forest (500 trees) and evaluates it with overall accuracy and a Wilson confidence interval, per-class precision/recall/F1 with bootstrap intervals, 5-fold cross-validation, a McNemar test against a baseline, and an ablation study. It then runs all 36 restoration scenarios (12 fault classes × 3 load levels), checks post-restoration voltages against the 0.95–1.05 pu limits, and writes the trained model, the metrics report, and the restoration result tables.
 
 **`MASTER_C_GENERATE_ALL_FIGURES.m`**
-Regenerates every figure used in the thesis (Chapters 3–6) at print resolution (300 DPI) from the saved dataset, trained model, and restoration summary. Font sizes are set to print-legible values.
+Generates the thesis figures (Chapters 3–6) at print resolution (300 DPI) from the saved dataset, trained model, and restoration summary.
 
 **`RUN_ALL_PIPELINE.m`**
 A launcher that runs A → B → C in sequence with skip logic and writes a combined run log (`pipeline_full_log.txt`).
 
 **`gen_fig5_14.m`**
-A small helper that reads `restoration_results_full.csv` and produces the post-restoration voltage figure (Fig. 5.14).
+A small helper that reads `restoration_results_full.csv` and produces the post-restoration voltage figure (Figure 5.14).
 
 ---
 
 ## Reproducibility Notes
 
 - A fixed random seed (`rng = 42`) is used for the dataset split and model training so that results are repeatable.
-- The full pipeline from zero takes roughly **20 hours**, dominated by the dataset-generation simulations in Stage A. The provided output summaries in `outputs/summaries/` correspond to the run reported in the thesis.
+- The full pipeline from zero takes roughly **20 hours**, dominated by the dataset-generation simulations in Stage A. The summaries in `outputs/summaries/` correspond to the run reported in the thesis.
 - Exact numerical values may vary slightly across different MATLAB releases, operating systems, or solver settings. The committed summaries reflect MATLAB R2024a on Windows 11.
-- Because the trained model and the binary dataset files are not committed (they are large and fully regenerable), reproducing the figures end-to-end requires running Stage A and Stage B first. If you only wish to inspect results, the committed CSV dataset (`outputs/dataset/fault_dataset_1000.csv`), summaries, and figures are sufficient.
+- Because the trained model and the binary dataset files are not committed (they are large and fully regenerable), reproducing the figures end-to-end requires running Stage A and Stage B first. To only inspect the results, the committed CSV dataset, summaries, and figures are sufficient.
 
 ---
 
