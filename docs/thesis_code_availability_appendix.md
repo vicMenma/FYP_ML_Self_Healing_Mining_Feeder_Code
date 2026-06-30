@@ -3,6 +3,7 @@
 To keep this thesis to a reasonable length, the full MATLAB and Simulink source code is not reproduced here as printed listings. Instead, the complete code base used to generate the results presented in this thesis has been archived in an external public repository to support transparency and reproducibility.
 
 **Repository link:** [insert GitHub repository link here]
+**Release URL:** [insert GitHub release link here]
 **Release tag:** `v1.0-thesis-submission`
 **Software:** MATLAB R2024a, with Simulink and Simscape Electrical (Specialized Power Systems)
 

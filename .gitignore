@@ -35,6 +35,10 @@ matlab.mat
 *.mat
 !outputs/**/*.mat      # allow small committed result .mat files, if any
 
+# Keep ONE lightweight CSV copy of the final dataset for quick inspection /
+# reproducibility (small, ~0.4 MB). The full datasets above stay ignored.
+!outputs/dataset/fault_dataset_1000.csv
+
 # --- Bulk / ad-hoc image dumps not part of the curated figure set ---
 Screenshot *.png
 

@@ -44,6 +44,8 @@ FYP_ML_Self_Healing_Mining_Feeder_Code/
 │   ├── gen_fig5_14.m                         % helper for post-restoration voltage figure
 │   └── mining_feeder_layer_FINAL_baseline.slx  % Simulink feeder model
 ├── outputs/
+│   ├── dataset/
+│   │   └── fault_dataset_1000.csv           % lightweight CSV copy of the final dataset (inspection)
 │   ├── summaries/                           % small text/CSV result summaries
 │   │   ├── rf_metrics_report.txt
 │   │   ├── restoration_summary.txt
@@ -60,7 +62,7 @@ FYP_ML_Self_Healing_Mining_Feeder_Code/
     └── thesis_code_availability_appendix.md
 ```
 
-The large generated artefacts (the trained model `rf_model_final.mat`, the full datasets `fault_dataset_1000.*`, simulation checkpoints, and `matlab.mat`) are intentionally **not** committed — they are reproducible by running the scripts and are excluded by `.gitignore`. See the reproducibility notes below.
+The full simulation dataset can be regenerated from the Simulink model by running `MASTER_A_PREFLIGHT_AND_DATASET.m`. For convenience, a **lightweight CSV copy of the final dataset** (`outputs/dataset/fault_dataset_1000.csv`, ~0.4 MB) is included so the data can be inspected without re-running the simulations. The large generated artefacts (the trained model `rf_model_final.mat`, the binary dataset files `fault_dataset_1000.mat`/`.xlsx`, simulation checkpoints, and `matlab.mat`) are intentionally **not** committed — they are regenerable by running the scripts and are excluded by `.gitignore`. See the reproducibility notes below.
 
 ---
 
@@ -108,7 +110,7 @@ A small helper that reads `restoration_results_full.csv` and produces the post-r
 - A fixed random seed (`rng = 42`) is used for the dataset split and model training so that results are repeatable.
 - The full pipeline from zero takes roughly **20 hours**, dominated by the dataset-generation simulations in Stage A. The provided output summaries in `outputs/summaries/` correspond to the run reported in the thesis.
 - Exact numerical values may vary slightly across different MATLAB releases, operating systems, or solver settings. The committed summaries reflect MATLAB R2024a on Windows 11.
-- Because the trained model and full datasets are not committed (they are large and fully regenerable), reproducing the figures end-to-end requires running Stage A and Stage B first. If you only wish to inspect results, the committed summaries and figures are sufficient.
+- Because the trained model and the binary dataset files are not committed (they are large and fully regenerable), reproducing the figures end-to-end requires running Stage A and Stage B first. If you only wish to inspect results, the committed CSV dataset (`outputs/dataset/fault_dataset_1000.csv`), summaries, and figures are sufficient.
 
 ---
 

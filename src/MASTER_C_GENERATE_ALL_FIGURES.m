@@ -2,7 +2,7 @@
 %  MASTER_C_GENERATE_ALL_FIGURES.m
 %  ─────────────────────────────────────────────────────────────────────────
 %  Thesis: ML-Assisted Self-Healing of a 33/11 kV Mining Distribution Feeder
-%  Author: Victoire — CU-BEE-100-7229  |  Supervisor: Mr Charles Kasonde
+%  Author: Victoire Chinyanta Chimundu — CU-BEE-100-7229  |  Supervisor: Mr Charles Kasonde
 %
 %  PURPOSE
 %  -------
