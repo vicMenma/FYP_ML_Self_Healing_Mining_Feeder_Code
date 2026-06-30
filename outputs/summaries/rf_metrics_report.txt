@@ -1,0 +1,48 @@
+RF METRICS REPORT
+Generated: 28-Apr-2026 12:43:08
+
+DATASET
+  Samples: 1000  Features: 24  Classes: 13
+
+SPLIT  Train: 800  Test: 200  rng=42
+
+OVERALL ACCURACY
+  Test accuracy : 1.0000 (100.00%)
+  Wilson 95% CI : [0.9812, 1.0000]
+  Fault det.    : 1.0000 (100.00%)
+  Healthy det.  : 1.0000 (100.00%)
+
+PER-CLASS F1
+  Class  0 Healthy    F1=1.000  BootCI=[1.000,1.000]
+  Class  1 SLG-B2     F1=1.000  BootCI=[1.000,1.000]
+  Class  2 LL-B2      F1=1.000  BootCI=[1.000,1.000]
+  Class  3 3PH-B2     F1=1.000  BootCI=[1.000,1.000]
+  Class  4 SLG-B3     F1=1.000  BootCI=[1.000,1.000]
+  Class  5 LL-B3      F1=1.000  BootCI=[1.000,1.000]
+  Class  6 3PH-B3     F1=1.000  BootCI=[1.000,1.000]
+  Class  7 SLG-B4     F1=1.000  BootCI=[1.000,1.000]
+  Class  8 LL-B4      F1=1.000  BootCI=[1.000,1.000]
+  Class  9 3PH-B4     F1=1.000  BootCI=[1.000,1.000]
+  Class 10 SLG-B5     F1=1.000  BootCI=[1.000,1.000]
+  Class 11 LL-B5      F1=1.000  BootCI=[1.000,1.000]
+  Class 12 3PH-B5     F1=1.000  BootCI=[1.000,1.000]
+
+MACRO AVERAGES
+  Macro P (arith)  : 1.0000
+  Macro R (arith)  : 1.0000
+  Macro F1 (arith mean of per-class F1, NOT harmonic mean of macro P/R): 1.0000
+
+CROSS-VALIDATION
+  Fold 1: 1.0000
+  Fold 2: 1.0000
+  Fold 3: 1.0000
+  Fold 4: 1.0000
+  Fold 5: 1.0000
+  Mean: 1.0000 +/- 0.0000
+
+MCNEMAR
+  chi^2=178.01  b=0  c=180  significant=1
+
+OOB
+  Error at N=500: 0.0000 (0.00%)
+

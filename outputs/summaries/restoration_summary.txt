@@ -1,0 +1,47 @@
+RESTORATION SCENARIO SUITE
+Generated: 28-Apr-2026 13:27:25
+
+36 scenarios: 12 fault classes x 3 load levels (LM=0.70/1.00/1.30)
+Topology: T1 -> B2 -> B3 -> B4 (series radial), T2 -> B5 (SXEW)
+Voltage limit: 0.95-1.05 pu (11 kV base)
+
+RESULTS: PASS=36  FAIL=0  ERROR=0
+
+Bus    Type  LM     Vpost_B4(pu) Vpost_B5(pu) Verdict 
+-------------------------------------------------------
+B2     SLG   0.70   0.9873       0.9891       PASS    
+B2     SLG   1.00   0.9818       0.9844       PASS    
+B2     SLG   1.30   0.9762       0.9796       PASS    
+B2     LL    0.70   0.9873       0.9891       PASS    
+B2     LL    1.00   0.9818       0.9844       PASS    
+B2     LL    1.30   0.9762       0.9796       PASS    
+B2     3PH   0.70   0.9873       0.9891       PASS    
+B2     3PH   1.00   0.9818       0.9844       PASS    
+B2     3PH   1.30   0.9762       0.9796       PASS    
+B3     SLG   0.70   0.9873       0.9891       PASS    
+B3     SLG   1.00   0.9818       0.9844       PASS    
+B3     SLG   1.30   0.9762       0.9796       PASS    
+B3     LL    0.70   0.9873       0.9891       PASS    
+B3     LL    1.00   0.9818       0.9844       PASS    
+B3     LL    1.30   0.9762       0.9796       PASS    
+B3     3PH   0.70   0.9873       0.9891       PASS    
+B3     3PH   1.00   0.9818       0.9844       PASS    
+B3     3PH   1.30   0.9762       0.9796       PASS    
+B4     SLG   0.70   0.9873       0.9891       PASS    
+B4     SLG   1.00   0.9818       0.9844       PASS    
+B4     SLG   1.30   0.9762       0.9796       PASS    
+B4     LL    0.70   0.9873       0.9891       PASS    
+B4     LL    1.00   0.9818       0.9844       PASS    
+B4     LL    1.30   0.9762       0.9796       PASS    
+B4     3PH   0.70   0.9873       0.9891       PASS    
+B4     3PH   1.00   0.9818       0.9844       PASS    
+B4     3PH   1.30   0.9762       0.9796       PASS    
+SXEW   SLG   0.70   0.9873       0.9891       PASS    
+SXEW   SLG   1.00   0.9818       0.9844       PASS    
+SXEW   SLG   1.30   0.9762       0.9796       PASS    
+SXEW   LL    0.70   0.9873       0.9891       PASS    
+SXEW   LL    1.00   0.9818       0.9844       PASS    
+SXEW   LL    1.30   0.9762       0.9796       PASS    
+SXEW   3PH   0.70   0.9873       0.9891       PASS    
+SXEW   3PH   1.00   0.9818       0.9844       PASS    
+SXEW   3PH   1.30   0.9762       0.9796       PASS    

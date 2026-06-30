@@ -1,0 +1,51 @@
+# =========================================================================
+#  .gitignore — MATLAB / Simulink thesis project
+#  Keeps source scripts, the Simulink model, and small summaries.
+#  Ignores temporary files, caches, autosaves, and large generated data.
+# =========================================================================
+
+# --- MATLAB temporary / autosave files ---
+*.asv          # editor autosave
+*.m~           # backup
+*.autosave
+
+# --- MATLAB / MEX build artefacts ---
+*.mex*
+*.o
+*.obj
+slprj/         # Simulink build folder
+codegen/
+*.mexw64
+*.mexa64
+*.mexmaci64
+
+# --- Simulink cache / autosave ---
+*.slxc         # Simulink cache
+*.slx.autosave
+*.slx.r*       # Simulink auto-recovery
+*.slx.original
+
+# --- Large generated datasets and models (regenerable by the scripts) ---
+fault_dataset_1000.mat
+fault_dataset_1000.csv
+fault_dataset_1000.xlsx
+dataset_checkpoint.mat
+rf_model_final.mat
+matlab.mat
+*.mat
+!outputs/**/*.mat      # allow small committed result .mat files, if any
+
+# --- Bulk / ad-hoc image dumps not part of the curated figure set ---
+Screenshot *.png
+
+# --- OS / editor noise ---
+.DS_Store
+Thumbs.db
+desktop.ini
+*.tmp
+*.bak
+*.log
+!outputs/summaries/pipeline_full_log.txt   # keep the curated pipeline log
+
+# --- IDE / VS Code ---
+.vscode/
