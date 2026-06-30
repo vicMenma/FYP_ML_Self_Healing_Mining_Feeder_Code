@@ -1,0 +1,59 @@
+# Thesis Final Figure Filename Map
+
+_Generated: 2026-06-30_
+
+Maps every official thesis figure caption (extracted from
+`Chimundu_VCC_BEng_Thesis_draft_4.docx`) to its source image in the repository and to the curated,
+caption-named copy under `outputs/figures/thesis_final_named/`. The original generated files are
+**kept unchanged** for reproducibility; the curated copies are for thesis-submission clarity.
+
+- Official captioned figures: **40** (Figure 3.1–3.12, 4.1–4.11, 5.1–5.14, 6.1–6.3)
+- Curated caption-named copies created: **40**
+
+| Fig | Official thesis caption | Original repository image | Curated image (renamed copy) | Source type | Visual audit status |
+|---|---|---|---|---|---|
+| 3.1 | Figure 3.1: Research methodology workflow. | `outputs/figures/simulink_model/Figure_3_1_Methodology_Workflow.png` | `outputs/figures/thesis_final_named/chapter_3/Figure_3_01_research_methodology_workflow.png` | manual Simulink/scope capture | EXACT MATCH |
+| 3.2 | Figure 3.2: Six-layer system architecture. | `outputs/figures/simulink_model/Figure_3_2_model_overview.png` | `outputs/figures/thesis_final_named/chapter_3/Figure_3_02_six_layer_system_architecture.png` | manual Simulink/scope capture | EXACT MATCH |
+| 3.3 | Figure 3.3: Feeder block diagram. | `outputs/figures/simulink_model/Figure_3_3_model_detail.png` | `outputs/figures/thesis_final_named/chapter_3/Figure_3_03_feeder_block_diagram.png` | manual Simulink/scope capture | EXACT MATCH |
+| 3.4 | Figure 3.4: Dataset generation workflow. | `outputs/figures/simulink_model/Figure_3_7_Dataset_Generation.png` | `outputs/figures/thesis_final_named/chapter_3/Figure_3_04_dataset_generation_workflow.png` | manual Simulink/scope capture | EXACT MATCH |
+| 3.5 | Figure 3.5: Fault parameter sweep space. | `outputs/figures/ch3_methodology/Fig3_3_parameter_sweep.png` | `outputs/figures/thesis_final_named/chapter_3/Figure_3_05_fault_parameter_sweep_space.png` | script-generated figure | EXACT MATCH |
+| 3.6 | Figure 3.6: RMS feature vector structure. | `outputs/figures/ch3_methodology/Fig3_4_feature_extraction.png` | `outputs/figures/thesis_final_named/chapter_3/Figure_3_06_rms_feature_vector_structure.png` | script-generated figure | EXACT MATCH |
+| 3.7 | Figure 3.7: Random Forest classifier structure. | `outputs/figures/ch3_methodology/Fig3_5_rf_architecture.png` | `outputs/figures/thesis_final_named/chapter_3/Figure_3_07_random_forest_classifier_structure.png` | script-generated figure | EXACT MATCH |
+| 3.8 | Figure 3.8: Machine-learning training pipeline. | `outputs/figures/simulink_model/Figure_3_8_ML_Training.png` | `outputs/figures/thesis_final_named/chapter_3/Figure_3_08_machine_learning_training_pipeline.png` | manual Simulink/scope capture | EXACT MATCH |
+| 3.9 | Figure 3.9: Asymmetric misclassification cost matrix. | `outputs/figures/ch4_system_design/Fig4_2_cost_matrix.png` | `outputs/figures/thesis_final_named/chapter_3/Figure_3_09_asymmetric_misclassification_cost_matrix.png` | script-generated figure | EXACT MATCH |
+| 3.10 | Figure 3.10: Selective isolation logic. | `outputs/figures/simulink_model/Figure_3_10_Selective_Isolation.png` | `outputs/figures/thesis_final_named/chapter_3/Figure_3_10_selective_isolation_logic.png` | manual Simulink/scope capture | EXACT MATCH |
+| 3.11 | Figure 3.11: Self-healing restoration logic. | `outputs/figures/simulink_model/Figure_3_11_Self_Healing.png` | `outputs/figures/thesis_final_named/chapter_3/Figure_3_11_self_healing_restoration_logic.png` | manual Simulink/scope capture | EXACT MATCH |
+| 3.12 | Figure 3.12: IDMT TCC benchmark. | `outputs/figures/thesis_manual_captures/Fig3_12_idmt_tcc_benchmark.png` | `outputs/figures/thesis_final_named/chapter_3/Figure_3_12_idmt_tcc_benchmark.png` | extracted from thesis document | NO MATCH FOUND (extracted from thesis .docx) |
+| 4.1 | Figure 4.1: Simulink feeder model canvas. | `outputs/figures/thesis_manual_captures/Fig4_1_simulink_feeder_model_canvas.png` | `outputs/figures/thesis_final_named/chapter_4/Figure_4_01_simulink_feeder_model_canvas.png` | manual Simulink/scope capture | EXACT MATCH (recovered from project file) |
+| 4.2 | Figure 4.2: Source, transformer and breaker parameters. | `outputs/figures/thesis_manual_captures/Fig4_2_source_transformer_breaker_parameters.png` | `outputs/figures/thesis_final_named/chapter_4/Figure_4_02_source_transformer_breaker_parameters.png` | manual Simulink/scope capture | EXACT MATCH (recovered from project file) |
+| 4.3 | Figure 4.3: Load block parameters. | `outputs/figures/thesis_manual_captures/Fig4_3_load_block_parameters.png` | `outputs/figures/thesis_final_named/chapter_4/Figure_4_03_load_block_parameters.png` | manual Simulink/scope capture | EXACT MATCH (recovered from project file) |
+| 4.4 | Figure 4.4: Fault block default settings. | `outputs/figures/thesis_manual_captures/Fig4_4_fault_block_default_settings.png` | `outputs/figures/thesis_final_named/chapter_4/Figure_4_04_fault_block_default_settings.png` | manual Simulink/scope capture | EXACT MATCH (recovered from project file) |
+| 4.5 | Figure 4.5: Switching-device parameter settings. | `outputs/figures/thesis_manual_captures/Fig4_5_switching_device_parameter_settings.png` | `outputs/figures/thesis_final_named/chapter_4/Figure_4_05_switching_device_parameter_settings.png` | manual Simulink/scope capture | EXACT MATCH (recovered from project file) |
+| 4.6 | Figure 4.6: Source and T1 healthy RMS outputs. | `outputs/figures/thesis_manual_captures/Fig4_6_source_and_T1_healthy_rms_outputs.png` | `outputs/figures/thesis_final_named/chapter_4/Figure_4_06_source_t1_healthy_rms_outputs.png` | manual Simulink/scope capture | EXACT MATCH (recovered from project file) |
+| 4.7 | Figure 4.7: Bus B4 and Bus B5 healthy RMS outputs. | `outputs/figures/thesis_manual_captures/Fig4_7_busB4_B5_healthy_rms_outputs.png` | `outputs/figures/thesis_final_named/chapter_4/Figure_4_07_bus_b4_bus_b5_healthy_rms_outputs.png` | manual Simulink/scope capture | EXACT MATCH (recovered from project file) |
+| 4.8 | Figure 4.8: T2 supply-path RMS outputs. | `outputs/figures/thesis_manual_captures/Fig4_8_T2_supply_path_rms_outputs.png` | `outputs/figures/thesis_final_named/chapter_4/Figure_4_08_t2_supply_path_rms_outputs.png` | manual Simulink/scope capture | EXACT MATCH (recovered from project file) |
+| 4.9 | Figure 4.9: Bus B2 and Bus B3 healthy RMS outputs. | `outputs/figures/thesis_manual_captures/Fig4_9_busB2_B3_healthy_rms_outputs.png` | `outputs/figures/thesis_final_named/chapter_4/Figure_4_09_bus_b2_bus_b3_healthy_rms_outputs.png` | manual Simulink/scope capture | EXACT MATCH (recovered from project file) |
+| 4.10 | Figure 4.10: Dataset class distribution. | `outputs/figures/ch5_results/Fig5_1_class_distribution.png` | `outputs/figures/thesis_final_named/chapter_4/Figure_4_10_dataset_class_distribution.png` | script-generated figure | EXACT MATCH |
+| 4.11 | Figure 4.11: Random Forest OOB error convergence. | `outputs/figures/ch5_results/Fig5_5_oob_error_curve.png` | `outputs/figures/thesis_final_named/chapter_4/Figure_4_11_random_forest_oob_error_convergence.png` | script-generated figure | EXACT MATCH |
+| 5.1 | Figure 5.1: Healthy Bus B2 waveforms. | `outputs/figures/ch3_methodology/Fig3_7_healthy_waveform.png` | `outputs/figures/thesis_final_named/chapter_5/Figure_5_01_healthy_bus_b2_waveforms.png` | script-generated figure | EXACT MATCH |
+| 5.2 | Figure 5.2: Phase A voltage signature by fault class. | `outputs/figures/ch5_results/Fig5_2_voltage_heatmap.png` | `outputs/figures/thesis_final_named/chapter_5/Figure_5_02_phase_voltage_signature_fault_class.png` | script-generated figure | EXACT MATCH |
+| 5.3 | Figure 5.3: Phase A current signature by fault class. | `outputs/figures/ch5_results/Fig5_3_current_heatmap.png` | `outputs/figures/thesis_final_named/chapter_5/Figure_5_03_phase_current_signature_fault_class.png` | script-generated figure | EXACT MATCH |
+| 5.4 | Figure 5.4: Bus B4 fault waveform comparison. | `outputs/figures/ch3_methodology/Fig3_8_fault_waveforms.png` | `outputs/figures/thesis_final_named/chapter_5/Figure_5_04_bus_b4_fault_waveform_comparison.png` | script-generated figure | EXACT MATCH |
+| 5.5 | Figure 5.5: Bus B2 current-voltage class separation. | `outputs/figures/ch5_results/Fig5_4_scatter_separability.png` | `outputs/figures/thesis_final_named/chapter_5/Figure_5_05_bus_b2_current_voltage_class_separation.png` | script-generated figure | EXACT MATCH |
+| 5.6 | Figure 5.6: Test-set confusion matrix. | `outputs/figures/ch5_results/Fig5_6_confusion_matrix.png` | `outputs/figures/thesis_final_named/chapter_5/Figure_5_06_test_set_confusion_matrix.png` | script-generated figure | EXACT MATCH |
+| 5.7 | Figure 5.7: Per-class classification metrics. | `outputs/figures/ch5_results/Fig5_8_per_class_metrics.png` | `outputs/figures/thesis_final_named/chapter_5/Figure_5_07_per_class_classification_metrics.png` | script-generated figure | EXACT MATCH |
+| 5.8 | Figure 5.8: Five-fold cross-validation results. | `outputs/figures/ch5_results/Fig5_9_cv_accuracy_folds.png` | `outputs/figures/thesis_final_named/chapter_5/Figure_5_08_five_fold_cross_validation_results.png` | script-generated figure | EXACT MATCH |
+| 5.9 | Figure 5.9: Random Forest versus majority baseline. | `outputs/figures/ch5_results/Fig5_10_baseline_comparison.png` | `outputs/figures/thesis_final_named/chapter_5/Figure_5_09_random_forest_versus_majority_baseline.png` | script-generated figure | EXACT MATCH |
+| 5.10 | Figure 5.10: OOB permutation feature importance. | `outputs/figures/ch5_results/Fig5_7_feature_importance.png` | `outputs/figures/thesis_final_named/chapter_5/Figure_5_10_oob_permutation_feature_importance.png` | script-generated figure | EXACT MATCH |
+| 5.11 | Figure 5.11: Feature ablation results. | `outputs/figures/ch5_results/Fig5_11_ablation_study.png` | `outputs/figures/thesis_final_named/chapter_5/Figure_5_11_feature_ablation_results.png` | script-generated figure | EXACT MATCH |
+| 5.12 | Figure 5.12: Per-class F1-score confidence intervals. | `outputs/figures/ch5_results/Fig5_12_f1_bootstrap_ci.png` | `outputs/figures/thesis_final_named/chapter_5/Figure_5_12_per_class_f1_score_confidence_intervals.png` | script-generated figure | EXACT MATCH |
+| 5.13 | Figure 5.13: Bus B4 voltage recovery timeline. | `outputs/figures/ch5_results/Fig5_13_restoration_waveforms.png` | `outputs/figures/thesis_final_named/chapter_5/Figure_5_13_bus_b4_voltage_recovery_timeline.png` | script-generated figure | EXACT MATCH |
+| 5.14 | Figure 5.14: Post-restoration voltage comparison. | `outputs/figures/ch5_results/Fig5_14_restoration_rms.png` | `outputs/figures/thesis_final_named/chapter_5/Figure_5_14_post_restoration_voltage_comparison.png` | script-generated figure | EXACT MATCH |
+| 6.1 | Figure 6.1: Protection scheme comparison. | `outputs/figures/ch6_conclusions/Fig6_1_scenario_comparison.png` | `outputs/figures/thesis_final_named/chapter_6/Figure_6_01_protection_scheme_comparison.png` | script-generated figure | EXACT MATCH |
+| 6.2 | Figure 6.2: Performance radar chart. | `outputs/figures/ch6_conclusions/Fig6_2_performance_radar.png` | `outputs/figures/thesis_final_named/chapter_6/Figure_6_02_performance_radar_chart.png` | script-generated figure | EXACT MATCH |
+| 6.3 | Figure 6.3: Future work roadmap. | `outputs/figures/ch6_conclusions/Fig6_3_future_work_roadmap.png` | `outputs/figures/thesis_final_named/chapter_6/Figure_6_03_future_work_roadmap.png` | script-generated figure | EXACT MATCH |
+
+**Source type legend** — _script-generated figure_: produced by `MASTER_C_GENERATE_ALL_FIGURES.m`
+(or the exported Simulink/diagram views committed with the project); _manual Simulink/scope capture_:
+screenshots of the Simulink model canvas, block parameter dialogs or scope/RMS outputs; _extracted
+from thesis document_: image taken directly from the `.docx` because no separate source file exists.

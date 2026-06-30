@@ -202,6 +202,7 @@ human confirmation at the first pass and have now been **archived** to `outputs/
 - `docs/figure_audit_contact_sheets/sheet2_unused.png` — GitHub figures with no thesis match (archived)
 - `docs/figure_audit_contact_sheets/sheet3_manual_review.png` — uncertain diagnostic plots vs their closest thesis figure
 - `docs/figure_audit_contact_sheets/sheet4_recovered_manual_figures.png` — each recovered figure (Fig 3.12, 4.1–4.9) beside its matched project-folder source
+- `docs/figure_audit_contact_sheets/sheet5_final_named_figures.png` — all 40 curated, caption-named figures in order (Fig 3.1 → 6.3)
 
 ## 11. Recovered Manual Thesis Figures
 
@@ -234,8 +235,36 @@ The four scope captures (Fig 4.6–4.9) are visually similar to one another, so 
 additionally confirmed to be **byte-identical** to its thesis image and to strictly out-score the
 nearest runner-up before being accepted. See `sheet4_recovered_manual_figures.png`.
 
+## 12. Final Thesis-Named Figure Folder
+
+The original generated figure files have **deliberately been kept under their script/model filenames**
+(in `ch3_methodology/`, `ch4_system_design/`, `ch5_results/`, `ch6_conclusions/`, `simulink_model/` and
+`thesis_manual_captures/`) so that re-running the MATLAB scripts does not clash with renamed files and
+reproducibility is preserved.
+
+In addition, a **curated copy of all 40 thesis figures** was created under:
+
+```
+outputs/figures/thesis_final_named/
+├── chapter_3/   (12 figures: Figure_3_01 … Figure_3_12)
+├── chapter_4/   (11 figures: Figure_4_01 … Figure_4_11)
+├── chapter_5/   (14 figures: Figure_5_01 … Figure_5_14)
+└── chapter_6/   ( 3 figures: Figure_6_01 … Figure_6_03)
+```
+
+Each file is **copied** (not moved) from its source image and renamed to the official thesis figure
+number plus a short slug of the official caption, e.g. `Figure_3_01_research_methodology_workflow.png`,
+`Figure_5_14_post_restoration_voltage_comparison.png`. The full figure-by-figure mapping (caption →
+original file → curated file → source type → audit status) is in
+[`docs/thesis_final_figure_filename_map.md`](thesis_final_figure_filename_map.md), and an ordered
+overview is in `docs/figure_audit_contact_sheets/sheet5_final_named_figures.png`.
+
+This folder is intended only for thesis-submission clarity; it does not replace the reproducible,
+script-named originals.
+
 ---
 
 _All similarity scores are reproducible by re-running the audit script. No image was deleted; unused
-figures were moved (not removed) under `outputs/figures_unused/`, and recovered figures were **copied**
-from the project folder (originals untouched) into `outputs/figures/thesis_manual_captures/`._
+figures were moved (not removed) under `outputs/figures_unused/`; recovered figures were **copied**
+from the project folder (originals untouched) into `outputs/figures/thesis_manual_captures/`; and the
+curated caption-named set is a **copy** under `outputs/figures/thesis_final_named/`._
