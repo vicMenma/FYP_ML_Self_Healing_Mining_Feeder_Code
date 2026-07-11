@@ -1,46 +1,34 @@
 # =========================================================================
 #  .gitignore — MATLAB / Simulink thesis project
-#  Keeps source scripts, the Simulink model, and small summaries.
-#  Ignores temporary files, caches, autosaves, and large generated data.
+#  Keeps source scripts, the Simulink model, the dataset, the trained model,
+#  the waveform captures, the figures, and the result summaries.
+#  Ignores temporary files, caches, autosaves, and model backups.
 # =========================================================================
 
 # --- MATLAB temporary / autosave files ---
-*.asv          # editor autosave
-*.m~           # backup
+*.asv
+*.m~
 *.autosave
 
 # --- MATLAB / MEX build artefacts ---
 *.mex*
 *.o
 *.obj
-slprj/         # Simulink build folder
+slprj/
 codegen/
-*.mexw64
-*.mexa64
-*.mexmaci64
 
-# --- Simulink cache / autosave ---
-*.slxc         # Simulink cache
+# --- Simulink cache / autosave / recovery ---
+*.slxc
 *.slx.autosave
-*.slx.r*       # Simulink auto-recovery
+*.slx.r*
 *.slx.original
+*_backup_*.slx
 
-# --- Large generated datasets and models (regenerable by the scripts) ---
-fault_dataset_1000.mat
-fault_dataset_1000.csv
-fault_dataset_1000.xlsx
-dataset_checkpoint.mat
-rf_model_final.mat
-matlab.mat
-*.mat
-!outputs/**/*.mat      # allow small committed result .mat files, if any
+# --- Rolling checkpoints (regenerable) ---
+dataset_checkpoint_v2.mat
 
-# Keep ONE lightweight CSV copy of the final dataset for quick inspection /
-# reproducibility (small, ~0.4 MB). The full datasets above stay ignored.
-!outputs/dataset/fault_dataset_1000.csv
-
-# --- Bulk / ad-hoc image dumps not part of the curated figure set ---
-Screenshot *.png
+# The committed .mat archive lives under outputs/ (dataset, model, waveforms)
+# and under src/ (the .slx model); these are intentionally tracked.
 
 # --- OS / editor noise ---
 .DS_Store
@@ -48,8 +36,4 @@ Thumbs.db
 desktop.ini
 *.tmp
 *.bak
-*.log
-!outputs/summaries/pipeline_full_log.txt   # keep the curated pipeline log
-
-# --- IDE / VS Code ---
 .vscode/

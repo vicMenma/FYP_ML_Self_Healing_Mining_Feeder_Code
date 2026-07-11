@@ -1,27 +1,41 @@
-# Appendix: Code and Data Availability
+# Appendix A — Code, Data and Reproducibility (repository text)
 
-To keep this thesis to a reasonable length, the full MATLAB and Simulink source code is not reproduced here as printed listings. Instead, the complete code base used to generate the results presented in this thesis has been archived in an external public repository to support transparency and reproducibility.
+*This file provides ready-to-paste text and the repository map for Appendix A of the thesis.*
 
-**Repository link:** https://github.com/vicMenma/FYP_ML_Self_Healing_Mining_Feeder_Code
-**Release URL:** https://github.com/vicMenma/FYP_ML_Self_Healing_Mining_Feeder_Code/releases/tag/v1.0-thesis-submission
-**Release tag:** `v1.0-thesis-submission`
-**Software:** MATLAB R2024a, with Simulink and Simscape Electrical (Specialized Power Systems)
+The complete workflow supporting this thesis — the Simulink model, the MATLAB pipeline scripts, the
+labelled dataset, the trained classifier, the live-simulation waveform data, the final figures, and
+the result summaries — is archived in a public GitHub repository:
 
-The release tagged above corresponds to the version of the code used to produce the figures and numerical results reported in this thesis. The repository contains the Simulink feeder model, the data-generation and training scripts, the self-healing/restoration routine, and the figure-generation scripts (all in `src/`); a lightweight CSV copy of the dataset (`outputs/dataset/fault_dataset_1000.csv`); the result summaries (`outputs/summaries/`); and the 40 figures used in the thesis, grouped by chapter and named after their official captions (`outputs/figures/thesis_final_named/`).
+- **Repository:** https://github.com/vicMenma/FYP_ML_Self_Healing_Mining_Feeder_Code
+- **Software environment:** MATLAB R2024a with Simulink and Simscape Electrical Specialized Power Systems
+- **Reproducibility:** a fixed random seed, `rng(42)`, makes the train/test split and model training
+  repeatable within MATLAB.
+- **Author:** Victoire Chinyanta Chimundu, CU-BEE-100-7229
 
-## Scripts Included
+## Repository contents
 
-| Script | Function |
-|--------|----------|
-| `MASTER_A_PREFLIGHT_AND_DATASET.m` | Verifies the Simulink model and signals, applies a grounding-resistance correction, and generates the 1000-sample labelled fault dataset (one healthy class and twelve fault classes spanning SLG, LL, and 3PH faults across the main buses and load levels). |
-| `MASTER_B_TRAIN_AND_RESTORE.m` | Trains the cost-sensitive random forest classifier (80/20 stratified split, fixed seed), evaluates it (accuracy with confidence interval, per-class precision/recall/F1, cross-validation, McNemar test, ablation), and runs the 36 restoration scenarios with post-restoration voltage checks. |
-| `MASTER_C_GENERATE_ALL_FIGURES.m` | Regenerates all thesis figures (Chapters 3–6) at print resolution from the saved dataset, trained model, and restoration results. |
-| `RUN_ALL_PIPELINE.m` | Runs the three master scripts in sequence (A → B → C) with skip logic for previously generated data, and writes a combined run log. |
-| `gen_fig5_14.m` | Helper script that produces the post-restoration voltage figure (Fig. 5.14) from the restoration results table. |
-| `mining_feeder_layer_FINAL_baseline.slx` | The Simulink/Simscape model of the 33/11 kV mining distribution feeder used throughout the study. |
+| Path | Purpose |
+|---|---|
+| `src/` | MATLAB scripts and the Simulink feeder model (`mining_feeder_layer_FINAL_baseline.slx`). |
+| `outputs/dataset/` | The 1000-sample labelled dataset (`.csv`, `.xlsx`, `.mat`), 24 features, 13 classes. |
+| `outputs/model/` | The trained Random Forest (`rf_model_v2.mat`) and the confusion, OOB, cross-validation and feature-importance data. |
+| `outputs/waveforms/` | Twelve live-simulation fault-and-restoration captures (`wave_{SLG,LL,3PH}_B{2..5}.mat`). |
+| `outputs/figures/` | The final thesis figures, organised by chapter, plus `figure_manifest.csv`. |
+| `outputs/summaries/` | Block discovery, SLG grounding pre-flight, RF metrics, restoration summary and results, and the pipeline log. |
 
-## Reproducing the Results
+## Script execution order
 
-The scripts are intended to be run in the order A → B → C (or via `RUN_ALL_PIPELINE.m`) from MATLAB R2024a, with the `src/` folder set as the current folder so that the scripts and the Simulink model share a common path. A fixed random seed is used so that the dataset split and model training are repeatable. The large datasets and trained model are regenerable from the scripts and are therefore not stored in the repository; the committed result summaries and figures correspond to the run reported in this thesis.
+| Order | Script | Purpose |
+|---|---|---|
+| 1 | `MASTER_A_PREFLIGHT_AND_DATASET.m` | Discovers blocks, runs the SLG grounding pre-flight, and generates the labelled dataset (aborts if any zone fails the pre-flight). |
+| 2 | `MASTER_B_TRAIN_AND_RESTORE.m` | Trains the cost-sensitive Random Forest and runs the closed-loop restoration and waveform-capture scenarios. |
+| 3 | `MASTER_C_GENERATE_ALL_FIGURES.m` | Regenerates the thesis figures from the stored outputs. |
+| — | `RUN_ALL_PIPELINE.m` | Runs the complete workflow with automated stage control and a smoke test. |
 
-The scripts and model in the linked repository correspond directly to the methodology, figures, and results presented in this thesis. This work is simulation-based and carried out for academic purposes; it does not constitute certified or field-ready protection software.
+## Academic and safety notice
+
+This repository is an academic archive for a simulation-based Bachelor of Engineering thesis. It is
+not a certified protection-relay package and must not be used for direct control of live mining
+electrical infrastructure. Practical implementation would require relay-setting review,
+hardware-in-the-loop testing, protection-coordination studies, cybersecurity assessment, site
+acceptance testing, and approval by competent protection engineers.

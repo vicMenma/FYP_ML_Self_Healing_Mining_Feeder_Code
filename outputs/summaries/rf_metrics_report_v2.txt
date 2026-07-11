@@ -1,0 +1,61 @@
+RANDOM FOREST METRICS REPORT (v2)
+Generated: 11-Jul-2026 07:34:33
+
+Train/Test: 800 / 200   Trees: 500   Cost(fault->Healthy)=12.5x
+
+OVERALL TEST ACCURACY : 1.0000 (100.00%)
+
+PER-CLASS PRECISION / RECALL / F1
+   0 Healthy    P=1.000  R=1.000  F1=1.000
+   1 SLG-B2     P=1.000  R=1.000  F1=1.000
+   2 LL-B2      P=1.000  R=1.000  F1=1.000
+   3 3PH-B2     P=1.000  R=1.000  F1=1.000
+   4 SLG-B3     P=1.000  R=1.000  F1=1.000
+   5 LL-B3      P=1.000  R=1.000  F1=1.000
+   6 3PH-B3     P=1.000  R=1.000  F1=1.000
+   7 SLG-B4     P=1.000  R=1.000  F1=1.000
+   8 LL-B4      P=1.000  R=1.000  F1=1.000
+   9 3PH-B4     P=1.000  R=1.000  F1=1.000
+  10 SLG-B5     P=1.000  R=1.000  F1=1.000
+  11 LL-B5      P=1.000  R=1.000  F1=1.000
+  12 3PH-B5     P=1.000  R=1.000  F1=1.000
+
+MACRO  P=1.000  R=1.000  F1=1.000
+
+FIVE-FOLD CROSS-VALIDATION ACCURACY
+  Fold 1: 1.0000
+  Fold 2: 1.0000
+  Fold 3: 1.0000
+  Fold 4: 1.0000
+  Fold 5: 1.0000
+  Mean: 1.0000
+
+OUT-OF-BAG ERROR (final): 0.0000
+
+TOP-8 FEATURE IMPORTANCE (OOB permutation delta error)
+  I_B3_A   : 1.3563
+  I_B4_A   : 1.2920
+  I_B5_A   : 1.2572
+  I_B2_A   : 1.2334
+  I_B4_C   : 1.0295
+  I_B3_C   : 0.9524
+  I_B5_C   : 0.9491
+  I_B2_C   : 0.9253
+
+CONFUSION MATRIX (rows=true 0..12, cols=pred 0..12)
+  20    0    0    0    0    0    0    0    0    0    0    0    0
+  0   15    0    0    0    0    0    0    0    0    0    0    0
+  0    0   15    0    0    0    0    0    0    0    0    0    0
+  0    0    0   15    0    0    0    0    0    0    0    0    0
+  0    0    0    0   15    0    0    0    0    0    0    0    0
+  0    0    0    0    0   15    0    0    0    0    0    0    0
+  0    0    0    0    0    0   15    0    0    0    0    0    0
+  0    0    0    0    0    0    0   15    0    0    0    0    0
+  0    0    0    0    0    0    0    0   15    0    0    0    0
+  0    0    0    0    0    0    0    0    0   15    0    0    0
+  0    0    0    0    0    0    0    0    0    0   15    0    0
+  0    0    0    0    0    0    0    0    0    0    0   15    0
+  0    0    0    0    0    0    0    0    0    0    0    0   15
+
+NOTE: Only simple, defendable metrics are reported. No Wilson interval,
+McNemar test, bootstrap confidence interval, or p-value is used.

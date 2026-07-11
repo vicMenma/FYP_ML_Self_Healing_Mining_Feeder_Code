@@ -1,702 +1,759 @@
 %% =========================================================================
-%  MASTER_B_TRAIN_AND_RESTORE.m
+%  MASTER_B_TRAIN_AND_RESTORE.m   (v2 — sectionalised radial topology)
 %  ─────────────────────────────────────────────────────────────────────────
 %  Thesis: ML-Assisted Self-Healing of a 33/11 kV Mining Distribution Feeder
 %  Author: Victoire Chinyanta Chimundu — CU-BEE-100-7229  |  Supervisor: Mr Charles Kasonde
 %
-%  PURPOSE
-%  -------
-%  Run this AFTER MASTER_A completes. Requires fault_dataset_1000.mat.
-%  It does, in order:
-%    [1]  Load dataset + 80/20 stratified split  (rng=42)
-%    [2]  Train cost-sensitive RF  (500 trees, 12.5x penalty)
-%    [3]  Full evaluation — accuracy, Wilson CI, per-class P/R/F1,
-%         bootstrap CI, 5-fold CV, McNemar vs baseline, ablation
-%    [4]  Save rf_model_final.mat + rf_metrics_report.txt
-%    [5]  All 36 restoration scenarios  (12 faults x 3 load levels)
-%         — SLG, LL, 3PH at B2/B3/B4/B5  x  LM 0.70 / 1.00 / 1.30
-%         — no ternary() calls — all if-else
-%         — B5 correctly uses Fault_SXEW (not Fault_B5)
-%         — exports restoration_results_full.csv + restoration_summary.txt
-%    [6]  Key thesis figures  (OOB curve, confusion matrix, per-class
-%         metrics, feature importance, CV bars, baseline comparison,
-%         restoration RMS recovery)
+%  [1] Trains a 500-tree cost-sensitive Random Forest on the v2 dataset.
+%  [2] Reports SIMPLE, defendable metrics only:
+%        confusion matrix, accuracy, precision, recall, F1,
+%        five-fold cross-validation, OOB error, feature importance.
+%      (No Wilson interval, no McNemar, no bootstrap CIs, no p-values.)
+%  [3] Runs the zone-based isolation + topology-limited restoration logic and
+%      assigns an explicit status to every scenario:
+%        RESTORED | ISOLATED_NO_TIE | BLOCKED_BY_CAPACITY | ERROR
+%      For B4/B5 the tie is kept OPEN by design (closing would backfeed the
+%      faulted zone) -> status ISOLATED_NO_TIE with the reason in Note, and
+%      the healthy upstream buses are reported under RemainsOnT1.
 %
-%  OUTPUT FILES
-%  ────────────
-%    rf_model_final.mat              ← trained model
-%    rf_metrics_report.txt           ← all numbers for thesis text
-%    restoration_results_full.csv    ← 36-row PASS/FAIL table
-%    restoration_summary.txt         ← concise thesis text summary
-%    figures/Fig5_*                  ← chapter 5 thesis figures
-%
-%  RUN TIME: ~3-4 hours (36 restoration simulations x ~5-7 min each)
+%  Restoration policy (exact):
+%    Fault_B2 : open CB_MAIN + CB_BUS1_B3 ; tie-close if V & T2 capacity OK ;
+%               restored = {B3,B4} ; isolated = B2
+%    Fault_B3 : open CB_BUS1_B3 + CB_BUS1_B4 ; tie-close if V & capacity OK ;
+%               B2 stays on T1 ; restored = {B4} ; isolated = B3
+%    Fault_B4 : open CB_BUS1_B4 ; TIE stays OPEN (would backfeed B4) ;
+%               B2,B3 stay on T1 ; isolated = B4
+%    Fault_B5 : open CB_T2_BUS5 ; TIE stays OPEN (would backfeed B5) ;
+%               main feeder stays on T1 ; isolated = B5
+%  Restoration is CONDITIONAL and TOPOLOGY-LIMITED — never "full restoration
+%  for all fault locations", and the tie NEVER backfeeds the faulted zone.
 % =========================================================================
 
-clc; close all;
-fprintf('=================================================================\n');
-fprintf('  MASTER B — TRAIN, EVALUATE, RESTORE\n');
-fprintf('  %s\n', datestr(now));
-fprintf('=================================================================\n\n');
+clc; close all; rng(42);
+MODEL   = 'mining_feeder_layer_FINAL_baseline';
+OUT_ROOT = fullfile(pwd,'outputs_v2_topology');
+OUT_SUM  = fullfile(OUT_ROOT,'summaries');
+if ~exist(OUT_SUM,'dir'); mkdir(OUT_SUM); end
+LOG = fullfile(OUT_SUM,'pipeline_log_v2.txt');
+logf(LOG, sprintf('MASTER_B (v2) started %s', datestr(now)), true);
+
+VBAND = [0.95 1.05];      % pu acceptance band — DESIGN criterion, not a model value
+% VBASE and T2_RATING_VA are NOT hardcoded: both are read live from the model
+% in section [2] (read_xfmr_v2 / read_xfmr_va) and the script ABORTS if the
+% reads fail. No electrical fallback values exist in this script.
+LOAD_LEVELS  = [0.70 1.00 1.30];
+CLASS_NAMES  = {'Healthy','SLG-B2','LL-B2','3PH-B2','SLG-B3','LL-B3','3PH-B3', ...
+                'SLG-B4','LL-B4','3PH-B4','SLG-B5','LL-B5','3PH-B5'};
 
 %% =========================================================================
-%%  SECTION 0 — CONFIGURATION
+%%  [1] LOAD DATASET + TRAIN RANDOM FOREST
 %% =========================================================================
-
-MODEL         = 'mining_feeder_layer_FINAL_baseline';
-
-%% — Confirmed block paths (same as MASTER_A) ——————————————————————————————
-FB = struct(...
-    'B2',   [MODEL '/Fault_B2'],   ...
-    'B3',   [MODEL '/Fault_B3'],   ...
-    'B4',   [MODEL '/Fault_B4'],   ...
-    'SXEW', [MODEL '/Fault_SXEW']);    % ← B5 = SXEW — confirmed
-
-LB = struct(...
-    'B2',   [MODEL '/DL_B2'],  'B3',   [MODEL '/DL_B3'], ...
-    'B4',   [MODEL '/DL_B4'],  'SXEW', [MODEL '/DL_SXEW']);
-
-CB = struct(...
-    'B2',  [MODEL '/CB_BUS1_B2'], 'B3',  [MODEL '/CB_BUS1_B3'], ...
-    'B4',  [MODEL '/CB_BUS1_B4'], 'B5',  [MODEL '/CB_T2_BUS5'], ...
-    'TIE', [MODEL '/TIE_B4_B5']);
-
-SIG_V  = {'RMS_V_B2','RMS_V_B3','RMS_V_B4','RMS_V_SXEW'};
-SIG_I  = {'RMS_I_B2','RMS_I_B3','RMS_I_B4','RMS_I_SXEW'};
-
-BUS_KEYS   = {'B2','B3','B4','SXEW'};
-FP_A='FaultA'; FP_B='FaultB'; FP_C='FaultC'; FP_G='GroundFault';
-FP_RF='FaultResistance'; FP_ST='SwitchTimes'; FP_IS='InitialStates';
-
-BASE_P = [1.5e6, 2.0e6, 2.5e6, 1.65e6];
-BASE_Q = [0.44e6, 0.59e6, 0.74e6, 0.49e6];
-
-V_BASE = 11000;   % line-to-line RMS (V) — matches model output
-
-CLASS_NAMES = {'Healthy','SLG-B2','LL-B2','3PH-B2','SLG-B3','LL-B3','3PH-B3',...
-               'SLG-B4','LL-B4','3PH-B4','SLG-B5','LL-B5','3PH-B5'};
-
-% Output folders
-if ~exist('figures','dir'); mkdir('figures'); end
-
-%% =========================================================================
-%%  SECTION 1 — LOAD DATASET + STRATIFIED SPLIT
-%% =========================================================================
-
-fprintf('[1/6] LOAD DATASET\n');
-
-if ~exist('fault_dataset_1000.mat','file')
-    error('fault_dataset_1000.mat not found. Run MASTER_A first.');
+% ---- ENTRY GATE: refuse to run on a missing or malformed dataset -----------
+dsfile = fullfile(OUT_ROOT,'fault_dataset_v2.mat');
+if ~exist(dsfile,'file')
+    error('MASTER_B:NoDataset', ...
+        ['fault_dataset_v2.mat not found in %s.\n' ...
+         'MASTER_A has not completed dataset generation. Run MASTER_A first\n' ...
+         '(expect several HOURS for the 1000-sample sweep). MASTER_B itself\n' ...
+         'then needs ~30-60 minutes for the restoration simulations.'], OUT_ROOT);
 end
-load('fault_dataset_1000.mat','dataset','feature_names','CLASS_NAMES');
+S = load(dsfile);   % X, y, featNames, CLASS_NAMES
+X = S.X; y = S.y; featNames = S.featNames;
+assert(size(X,2)==24, 'MASTER_B:BadDataset', 'Expected 24 features, found %d.', size(X,2));
+assert(numel(unique(y))==13, 'MASTER_B:BadDataset', 'Expected 13 classes, found %d.', numel(unique(y)));
+assert(size(X,1)>=500, 'MASTER_B:BadDataset', ...
+    'Only %d samples found — dataset generation appears incomplete.', size(X,1));
+logf(LOG, sprintf('Dataset gate PASSED: %d samples, %d features, %d classes.', ...
+    size(X,1), size(X,2), numel(unique(y))));
 
-X = dataset(:,1:end-1);
-y = dataset(:,end);
-n_feat = size(X,2);   % 24
-n_cls  = 13;
-n_samp = size(X,1);
+% stratified 80/20 split
+cv = cvpartition(y,'HoldOut',0.20);
+Xtr = X(training(cv),:); ytr = y(training(cv));
+Xte = X(test(cv),:);     yte = y(test(cv));
 
-fprintf('      Dataset: %d samples, %d features, %d classes\n', n_samp, n_feat, n_cls);
-for c = 0:12
-    fprintf('        Class %2d %-10s : %3d\n', c, CLASS_NAMES{c+1}, sum(y==c));
+% cost-sensitive: penalise fault-to-Healthy (false negative) by 12.5x
+K = 13; C = ones(K) - eye(K);
+C(2:13, 1) = 12.5;                 % true fault (rows 2..13) predicted Healthy (col 1)
+classes = 0:12;
+
+fprintf('Training 500-tree cost-sensitive Random Forest on %d samples ...\n', numel(ytr));
+tTrain = tic;
+rf = TreeBagger(500, Xtr, ytr, 'Method','classification', ...
+    'OOBPrediction','on','OOBPredictorImportance','on', ...
+    'Cost', C);   % numeric labels: class order = sorted unique(ytr) = 0..12, matches C
+logf(LOG, sprintf('RF training done in %.1f s. (Training on 800x24 samples IS genuinely fast;', toc(tTrain)));
+logf(LOG,        '   the slow, provable part of MASTER_B is the restoration simulations below.)');
+
+% ---- test-set evaluation ----
+yhat = str2double(predict(rf, Xte));
+acc  = mean(yhat == yte);
+Cm   = confusionmat(yte, yhat, 'Order', classes);
+[prec, rec, f1] = prf_from_confusion(Cm);
+
+% ---- OOB error curve + feature importance (naturally available) ----
+oobErr = oobError(rf);
+imp    = rf.OOBPermutedPredictorDeltaError(:).';
+
+% ---- five-fold stratified cross-validation (simple) ----
+tCV = tic;
+cvACC = zeros(5,1); c5 = cvpartition(y,'KFold',5);
+for i = 1:5
+    m = TreeBagger(500, X(training(c5,i),:), y(training(c5,i)), ...
+        'Method','classification','Cost',C);
+    p = str2double(predict(m, X(test(c5,i),:)));
+    cvACC(i) = mean(p == y(test(c5,i)));
+    fprintf('  CV fold %d/5: accuracy = %.4f\n', i, cvACC(i));
 end
+logf(LOG, sprintf('Five-fold CV done in %.1f s.', toc(tCV)));
 
-rng(42);  % fixed seed — must match thesis
-cv_split  = cvpartition(y,'HoldOut',0.2);
-idx_train = training(cv_split);
-idx_test  = test(cv_split);
-X_train = X(idx_train,:);  y_train = y(idx_train);
-X_test  = X(idx_test,:);   y_test  = y(idx_test);
-
-fprintf('\n      Train: %d  |  Test: %d  |  rng=42\n', sum(idx_train), sum(idx_test));
-fprintf('      Test class counts:\n');
-for c = 0:12
-    fprintf('        Class %2d: %d\n', c, sum(y_test==c));
-end
-fprintf('\n');
+save(fullfile(OUT_ROOT,'oob_error_curve_v2.mat'),'oobErr');
+save(fullfile(OUT_ROOT,'feature_importance_v2.mat'),'imp','featNames');
+save(fullfile(OUT_ROOT,'confusion_v2.mat'),'Cm','classes','CLASS_NAMES');
+save(fullfile(OUT_ROOT,'cv_accuracy_v2.mat'),'cvACC');
+write_metrics_report(fullfile(OUT_SUM,'rf_metrics_report_v2.txt'), ...
+    acc, prec, rec, f1, Cm, cvACC, oobErr, imp, featNames, CLASS_NAMES, numel(ytr), numel(yte));
+save(fullfile(OUT_ROOT,'rf_model_v2.mat'),'rf','featNames','CLASS_NAMES','acc');
+logf(LOG, sprintf('RF trained. Test accuracy = %.4f. 5-fold CV mean = %.4f.', acc, mean(cvACC)));
 
 %% =========================================================================
-%%  SECTION 2 — TRAIN RANDOM FOREST
+%%  [2] ZONE ISOLATION + TOPOLOGY-LIMITED RESTORATION
 %% =========================================================================
-
-fprintf('[2/6] TRAIN RANDOM FOREST (500 trees, 12.5x cost matrix)\n');
-
-N_TREES  = 500;
-N_PRED   = max(1, floor(sqrt(n_feat)));   % = 5
-
-% Asymmetric cost matrix: fault predicted as Healthy = 12.5x penalty
-cost_mat = ones(n_cls);
-for r = 2:n_cls
-    cost_mat(r,1) = 12.5;   % row=true class, col=predicted class
-end
-cost_mat(eye(n_cls,'logical')) = 0;
-
-fprintf('      Cost matrix: fault -> Healthy = 12.5x  |  trees = %d  |  sqrt features = %d\n', N_TREES, N_PRED);
-fprintf('      Note: cost matrix penalises missed faults, not false alarms.\n');
-fprintf('            This is the operational priority for mining protection.\n\n');
-
-rng(42);
-t0 = datetime('now');
-
-rf_model = TreeBagger(N_TREES, X_train, y_train, ...
-    'Method',                'classification', ...
-    'NumPredictorsToSample', N_PRED,           ...
-    'MinLeafSize',           1,                ...
-    'OOBPrediction',         'On',             ...
-    'OOBPredictorImportance','On',             ...
-    'Cost',                  cost_mat);
-
-t_train = seconds(datetime('now') - t0);
-oob_err = oobError(rf_model); oob_err = oob_err(end);
-fprintf('      Training done in %.1f s  |  OOB error = %.4f (%.1f%%)\n\n', ...
-    t_train, oob_err, oob_err*100);
-
-%% =========================================================================
-%%  SECTION 3 — FULL EVALUATION
-%% =========================================================================
-
-fprintf('[3/6] EVALUATION\n\n');
-
-[y_pred_cell, scores] = predict(rf_model, X_test);
-y_pred = str2double(y_pred_cell);
-z95    = 1.96;
-n_test = numel(y_test);
-
-%% 3a: Overall accuracy + Wilson CI ————————————————————————————————————————
-acc   = mean(y_pred == y_test);
-w_lo  = (acc + z95^2/(2*n_test) - z95*sqrt(acc*(1-acc)/n_test + z95^2/(4*n_test^2))) / (1+z95^2/n_test);
-w_hi  = (acc + z95^2/(2*n_test) + z95*sqrt(acc*(1-acc)/n_test + z95^2/(4*n_test^2))) / (1+z95^2/n_test);
-
-fault_mask = (y_test > 0);
-fault_det  = mean(y_pred(fault_mask) > 0);
-healthy_det= mean(y_pred(~fault_mask) == 0);
-
-fprintf('  Overall accuracy    : %.4f (%.2f%%)\n', acc, acc*100);
-fprintf('  Wilson 95%% CI       : [%.4f, %.4f]  -> [%.2f%%, %.2f%%]\n', w_lo, w_hi, w_lo*100, w_hi*100);
-if w_lo < 0.95
-    fprintf('  NOTE: CI lower bound %.2f%% is below 95%% target (honest reporting).\n', w_lo*100);
-end
-fprintf('  Fault detection     : %.4f (%.2f%%)  <- primary safety metric\n', fault_det, fault_det*100);
-fprintf('  Healthy detection   : %.4f (%.2f%%)  <- cost-sensitive design outcome\n', healthy_det, healthy_det*100);
-fprintf('  OOB error (N=500)   : %.4f (%.2f%%)  <- independent of test set\n\n', oob_err, oob_err*100);
-
-%% 3b: Per-class metrics + Wilson CI on recall ——————————————————————————————
-per_cls = zeros(n_cls, 4);   % [prec, recall, f1, n]
-fprintf('  Per-class metrics (Wilson 95%% CI on recall):\n');
-fprintf('  %-12s  Prec   Rec    F1     n   Recall CI\n','Class');
-fprintf('  %s\n', repmat('-',1,66));
-for c = 0:12
-    tp = sum((y_test==c) & (y_pred==c));
-    fp = sum((y_test~=c) & (y_pred==c));
-    nc = sum(y_test==c);
-    pr = tp/max(tp+fp,1);
-    re = tp/max(nc,1);
-    f1 = 2*pr*re/max(pr+re,1e-9);
-    per_cls(c+1,:) = [pr,re,f1,nc];
-    if nc > 0
-        wl2 = (re+z95^2/(2*nc)-z95*sqrt(re*(1-re)/nc+z95^2/(4*nc^2)))/(1+z95^2/nc);
-        wh2 = (re+z95^2/(2*nc)+z95*sqrt(re*(1-re)/nc+z95^2/(4*nc^2)))/(1+z95^2/nc);
-        ci_str = sprintf('[%.3f,%.3f]', max(0,wl2), min(1,wh2));
-    else
-        ci_str = 'N/A';
-    end
-    fprintf('  %2d %-10s  %.3f  %.3f  %.3f  %3d  %s\n', ...
-        c, CLASS_NAMES{c+1}, pr, re, f1, nc, ci_str);
-end
-macro_f1_arith = mean(per_cls(:,3));
-macro_prec     = mean(per_cls(:,1));
-macro_rec      = mean(per_cls(:,2));
-fprintf('\n  Macro P (arith mean) : %.4f\n', macro_prec);
-fprintf('  Macro R (arith mean) : %.4f\n', macro_rec);
-fprintf('  Macro F1 (arith mean of per-class F1) : %.4f\n', macro_f1_arith);
-fprintf('  NOTE: Macro F1 = arith mean of per-class F1 = (11x1.000 + 2x0.857)/13\n');
-fprintf('        NOT harmonic mean of macro P and macro R (which would be %.4f)\n\n', ...
-    2*macro_prec*macro_rec/max(macro_prec+macro_rec,1e-9));
-
-%% 3c: Bootstrap 95% CI on per-class F1 ————————————————————————————————————
-fprintf('  Computing bootstrap 95%% CI on F1 (1000 iterations)...\n');
-N_BOOT = 1000;
-rng(42);
-boot_f1 = zeros(N_BOOT, n_cls);
-for b = 1:N_BOOT
-    idx_b  = randsample(n_test, n_test, true);
-    yb = y_test(idx_b);  ypb = y_pred(idx_b);
-    for c = 0:12
-        tp_=sum((yb==c)&(ypb==c)); fp_=sum((yb~=c)&(ypb==c)); nc_=sum(yb==c);
-        pr_=tp_/max(tp_+fp_,1); re_=tp_/max(nc_,1);
-        boot_f1(b,c+1) = 2*pr_*re_/max(pr_+re_,1e-9);
-    end
-end
-f1_lo = prctile(boot_f1,2.5,1);
-f1_hi = prctile(boot_f1,97.5,1);
-fprintf('  %-12s  F1      Boot 95%% CI      Note\n','Class');
-fprintf('  %s\n',repmat('-',1,60));
-for c = 0:12
-    note = '';
-    if f1_lo(c+1)==1.0 && f1_hi(c+1)==1.0
-        note = '(degenerate — n=15, always 15/15 correct)';
-    end
-    fprintf('  %2d %-10s  %.3f  [%.3f, %.3f]  %s\n', ...
-        c, CLASS_NAMES{c+1}, per_cls(c+1,3), f1_lo(c+1), f1_hi(c+1), note);
-end
-fprintf('  NOTE: [1.000,1.000] CI is mathematically degenerate (15 test\n');
-fprintf('        samples, all correct). It conveys no uncertainty.\n\n');
-
-%% 3d: 5-fold cross-validation —————————————————————————————————————————————
-fprintf('  5-fold stratified cross-validation...\n');
-rng(42);
-cv5 = cvpartition(y,'KFold',5);
-cv_acc = zeros(5,1);
-for fold = 1:5
-    Xtr=X(training(cv5,fold),:); ytr=y(training(cv5,fold));
-    Xva=X(test(cv5,fold),:);     yva=y(test(cv5,fold));
-    rng(42+fold);
-    rf_f = TreeBagger(N_TREES,Xtr,ytr,'Method','classification', ...
-        'NumPredictorsToSample',N_PRED,'MinLeafSize',1,'Cost',cost_mat);
-    yp = str2double(predict(rf_f,Xva));
-    cv_acc(fold) = mean(yp==yva);
-    fprintf('    Fold %d: %.4f (%.2f%%)\n', fold, cv_acc(fold), cv_acc(fold)*100);
-end
-cv_mean = mean(cv_acc);  cv_std = std(cv_acc);
-fprintf('  CV mean: %.4f +/- %.4f  (%.2f%% +/- %.2f%%)\n\n', ...
-    cv_mean, cv_std, cv_mean*100, cv_std*100);
-
-%% 3e: McNemar vs majority-class baseline ——————————————————————————————————
-[~, majority_cls] = max(histcounts(y_train,-0.5:12.5));
-majority_cls = majority_cls - 1;
-y_maj = repmat(majority_cls, n_test, 1);
-acc_maj = mean(y_maj == y_test);
-
-b_mcn = sum((y_pred~=y_test) & (y_maj==y_test));  % RF wrong, baseline right
-c_mcn = sum((y_pred==y_test) & (y_maj~=y_test));  % RF right, baseline wrong
-mcn_chi2 = (abs(b_mcn - c_mcn) - 1)^2 / max(b_mcn + c_mcn, 1);
-
-fprintf('  Majority class baseline accuracy : %.4f (%.2f%%)\n', acc_maj, acc_maj*100);
-fprintf('  RF vs baseline improvement       : +%.2f pp\n', (acc - acc_maj)*100);
-fprintf('  McNemar chi^2 = %.2f  (b=%d, c=%d)\n', mcn_chi2, b_mcn, c_mcn);
-if mcn_chi2 > 3.841
-    fprintf('  p < 0.05 — statistically significant at all conventional levels\n\n');
-else
-    fprintf('  p > 0.05 — not statistically significant\n\n');
-end
-
-%% 3f: Ablation study ——————————————————————————————————————————————————————
-fprintf('  Ablation study:\n');
-ablation_configs = {
-    'Full 24 features',          1:24;
-    'Without V_B2_A (23 feat)',  [2:24];
-    'Without all B2 (18 feat)',  [4:24];
-};
-for ai = 1:size(ablation_configs,1)
-    lbl  = ablation_configs{ai,1};
-    cols = ablation_configs{ai,2};
-    rng(42);
-    rf_ab = TreeBagger(N_TREES,X_train(:,cols),y_train,'Method','classification', ...
-        'NumPredictorsToSample',max(1,floor(sqrt(numel(cols)))),'MinLeafSize',1,'Cost',cost_mat);
-    yp_ab = str2double(predict(rf_ab,X_test(:,cols)));
-    acc_ab = mean(yp_ab==y_test);
-    fprintf('    %-32s : %.4f (%.2f%%)  [delta=%.3f pp]\n', ...
-        lbl, acc_ab, acc_ab*100, (acc_ab-acc)*100);
-end
-fprintf('  NOTE: Zero degradation from removing Bus B2 features confirms\n');
-fprintf('  distributed feature redundancy. But: with 15 test samples per class,\n');
-fprintf('  1 misclassification = 6.7pp change. Cross-validated ablation needed\n');
-fprintf('  for stronger claims.\n\n');
-
-%% =========================================================================
-%%  SECTION 4 — SAVE MODEL + METRICS REPORT
-%% =========================================================================
-
-fprintf('[4/6] SAVE MODEL + METRICS REPORT\n');
-
-save('rf_model_final.mat','rf_model','X_train','y_train','X_test','y_test', ...
-     'feature_names','CLASS_NAMES','per_cls','cv_acc','oob_err');
-
-fid = fopen('rf_metrics_report.txt','w');
-fprintf(fid,'RF METRICS REPORT\nGenerated: %s\n\n', datestr(now));
-fprintf(fid,'DATASET\n  Samples: %d  Features: %d  Classes: %d\n\n', n_samp, n_feat, n_cls);
-fprintf(fid,'SPLIT  Train: %d  Test: %d  rng=42\n\n', sum(idx_train), sum(idx_test));
-fprintf(fid,'OVERALL ACCURACY\n');
-fprintf(fid,'  Test accuracy : %.4f (%.2f%%)\n', acc, acc*100);
-fprintf(fid,'  Wilson 95%% CI : [%.4f, %.4f]\n', w_lo, w_hi);
-if w_lo < 0.95
-    fprintf(fid,'  IMPORTANT: Lower bound %.4f < 0.95 target — honest acknowledgement\n', w_lo);
-end
-fprintf(fid,'  Fault det.    : %.4f (%.2f%%)\n', fault_det, fault_det*100);
-fprintf(fid,'  Healthy det.  : %.4f (%.2f%%)\n\n', healthy_det, healthy_det*100);
-fprintf(fid,'PER-CLASS F1\n');
-for c = 0:12
-    fprintf(fid,'  Class %2d %-10s F1=%.3f  BootCI=[%.3f,%.3f]\n', ...
-        c, CLASS_NAMES{c+1}, per_cls(c+1,3), f1_lo(c+1), f1_hi(c+1));
-end
-fprintf(fid,'\nMACRO AVERAGES\n');
-fprintf(fid,'  Macro P (arith)  : %.4f\n', macro_prec);
-fprintf(fid,'  Macro R (arith)  : %.4f\n', macro_rec);
-fprintf(fid,'  Macro F1 (arith mean of per-class F1, NOT harmonic mean of macro P/R): %.4f\n\n', macro_f1_arith);
-fprintf(fid,'CROSS-VALIDATION\n');
-for k=1:5; fprintf(fid,'  Fold %d: %.4f\n', k, cv_acc(k)); end
-fprintf(fid,'  Mean: %.4f +/- %.4f\n\n', cv_mean, cv_std);
-fprintf(fid,'MCNEMAR\n  chi^2=%.2f  b=%d  c=%d  significant=%d\n\n', ...
-    mcn_chi2, b_mcn, c_mcn, mcn_chi2>3.841);
-fprintf(fid,'OOB\n  Error at N=500: %.4f (%.2f%%)\n\n', oob_err, oob_err*100);
-fclose(fid);
-fprintf('      Saved: rf_model_final.mat\n');
-fprintf('      Saved: rf_metrics_report.txt\n\n');
-
-%% =========================================================================
-%%  SECTION 5 — ALL 36 RESTORATION SCENARIOS
-%% =========================================================================
-
-fprintf('[5/6] RESTORATION — 36 SCENARIOS (12 faults x 3 load levels)\n');
-fprintf('      Estimated time: ~3-4 hours\n\n');
-
+logf(LOG,'Running zone isolation + restoration scenarios ...');
 load_system(MODEL);
+BL = discover_blocks(MODEL);
+T2_RATING_VA = read_xfmr_va(MODEL,'T2');   % read live from the model; ABORTS if unreadable
+VBASE        = read_xfmr_v2(MODEL,'T1');   % read live from the model; ABORTS if unreadable
+logf(LOG, sprintf('T2 rating read from model : %.2f MVA (capacity check).', T2_RATING_VA/1e6));
+logf(LOG, sprintf('Voltage base read from T1 : %.0f V line-to-line (pu conversion).', VBASE));
+% NOTE: nameplate load values are NOT used by any decision. Capacity checks
+% use pre-fault power MEASURED from Stage-1 signals (measured_bus_va).
 
-% Discover ground resistance parameter name
-grnd_param = 'UNKNOWN';
-try
-    mn_f = get_param(FB.B2,'MaskNames');
-    for cand = {'GroundResistance','Rground','Rg','ground_resistance'}
-        if any(strcmpi(mn_f,cand{1})); grnd_param=cand{1}; break; end
-    end
-catch; end
-
-T_FAULT   = 1.00;
-T_ISOLATE = 1.50;
-T_RESTORE = 2.00;
-T_END     = 3.50;
-V_LO = 0.95;  V_HI = 1.05;
-
-LOAD_MULTS = [0.70, 1.00, 1.30];
-
-% Breaker isolation map: faulted bus -> which CB to trip
-% Series-radial: tripping CB_Bx isolates that bus and everything downstream
-ISO_CB = struct('B2',CB.B2, 'B3',CB.B3, 'B4',CB.B4, 'SXEW',CB.B5);
-
-% Phase configs for restoration (same as dataset generation)
-PH_R(1) = struct('A','on','B','off','C','off','G','on' );  % SLG
-PH_R(2) = struct('A','on','B','on', 'C','off','G','off');  % LL
-PH_R(3) = struct('A','on','B','on', 'C','on', 'G','off');  % 3PH
-
-FAULT_TYPE_NAMES = {'SLG','LL','3PH'};
-
-nScen  = 12;
-nLoads = numel(LOAD_MULTS);
-results_cell = cell(nScen*nLoads, 11);
-rrow = 0;
-
-t_rest_start = datetime('now');
-
-for b_idx = 1:numel(BUS_KEYS)
-    bus_key = BUS_KEYS{b_idx};
-    flt_blk = FB.(bus_key);
-    iso_blk = ISO_CB.(bus_key);
-
-    for ft_idx = 1:3
-        ft_name = FAULT_TYPE_NAMES{ft_idx};
-        ph_r    = PH_R(ft_idx);
-
-        for li = 1:nLoads
-            lm    = LOAD_MULTS(li);
-            rrow  = rrow + 1;
-            label = sprintf('%s-%s_LM%.2f', ft_name, bus_key, lm);
-            fprintf('  [%2d/36] %s ... ', rrow, label);
-
-            %% Configure fault block
-            set_param(flt_blk, FP_A,ph_r.A, FP_B,ph_r.B, FP_C,ph_r.C, FP_G,ph_r.G, ...
-                FP_RF,'0.001', FP_ST,sprintf('[%.2f %.2f]',T_FAULT,T_ISOLATE), FP_IS,'0');
-                %% ^ fault clears at T_ISOLATE (when CB opens) — NOT at T_END.
-                %% If the fault stayed active until T_END, the TIE closing at
-                %% T_RESTORE would back-feed T2 directly into the fault through
-                %% the isolated section, collapsing B4 and B5 voltages.
-            if ~strcmp(grnd_param,'UNKNOWN')
-                if strcmp(ph_r.G,'on')
-                    try; set_param(flt_blk,grnd_param,'0.001'); catch; end
-                else
-                    try; set_param(flt_blk,grnd_param,'500'); catch; end
-                end
-            end
-
-            %% Configure isolation breaker: closes at T_ISOLATE (trip = open)
-            set_breaker_simple(iso_blk, '1', sprintf('[%.2f %.2f]',T_ISOLATE,T_END+1));
-
-            %% Configure tie-switch: opens initially, closes at T_RESTORE
-            set_breaker_simple(CB.TIE,  '0', sprintf('[%.2f %.2f]',T_RESTORE,T_END+1));
-
-            %% Set load multiplier
-            scale_all_loads_B(MODEL, LB, BUS_KEYS, BASE_P, BASE_Q, lm);
-            set_param(MODEL,'StopTime',num2str(T_END));
-
-            try
-                sO = sim(MODEL,'SimulationMode','normal','FastRestart','off', ...
-                    'SaveOutput','on','SignalLogging','on', ...
-                    'SignalLoggingName','logsout','SaveFormat','Dataset');
-
-                %% Extract Phase-A RMS at B4 and B5
-                raw4 = sO.get('RMS_V_B4');
-                raw5 = sO.get('RMS_V_SXEW');
-                t_v  = raw4.time;
-                v4   = raw4.signals.values(:,1) / V_BASE;
-                v5   = raw5.signals.values(:,1) / V_BASE;
-
-                dt_v  = mean(diff(t_v(1:min(100,end))));
-                w_pts = max(1, round(0.020/dt_v));
-
-                V_pre4  = window_mean(v4, t_v, T_FAULT-0.05,  T_FAULT,       w_pts);
-                V_pre5  = window_mean(v5, t_v, T_FAULT-0.05,  T_FAULT,       w_pts);
-                V_flt4  = window_mean(v4, t_v, T_ISOLATE-0.05,T_ISOLATE,     w_pts);
-                V_flt5  = window_mean(v5, t_v, T_ISOLATE-0.05,T_ISOLATE,     w_pts);
-                V_post4 = window_mean(v4, t_v, T_RESTORE+0.2, T_RESTORE+0.5, w_pts);
-                V_post5 = window_mean(v5, t_v, T_RESTORE+0.2, T_RESTORE+0.5, w_pts);
-
-                %% Verdict — if-else (no ternary)
-                if V_post4>=V_LO && V_post4<=V_HI && V_post5>=V_LO && V_post5<=V_HI
-                    verdict = 'PASS';
-                else
-                    verdict = 'FAIL';
-                end
-
-                fprintf('Vpost_B4=%.4f pu | Vpost_B5=%.4f pu | %s\n', ...
-                    V_post4, V_post5, verdict);
-
-            catch ME
-                V_pre4=NaN; V_pre5=NaN; V_flt4=NaN; V_flt5=NaN;
-                V_post4=NaN; V_post5=NaN; verdict='ERROR';
-                fprintf('ERROR: %s\n', ME.message(1:min(60,end)));
-            end
-
-            results_cell(rrow,:) = {bus_key, ft_name, 0.001, lm, ...
-                V_pre4, V_pre5, V_flt4, V_flt5, V_post4, V_post5, verdict};
-
-            %% Reset blocks to inactive
-            set_param(flt_blk, FP_A,'off',FP_B,'off',FP_C,'off',FP_G,'off', ...
-                FP_ST,'[1000000 1000001]',FP_IS,'0');
-            set_breaker_simple(iso_blk,'1','[1000000 1000001]');
-            set_breaker_simple(CB.TIE, '0','[1000000 1000001]');
-        end
-    end
-end
-
-t_rest_elapsed = datetime('now') - t_rest_start;
-
-%% Build results table and export ———————————————————————————————————————————
-T_rest = cell2table(results_cell, 'VariableNames', ...
-    {'FaultBus','FaultType','Ron_ohm','LoadMult', ...
-     'Vpre_B4_pu','Vpre_B5_pu','Vfault_B4_pu','Vfault_B5_pu', ...
-     'Vpost_B4_pu','Vpost_B5_pu','Verdict'});
-
-n_pass = sum(strcmp(T_rest.Verdict,'PASS'));
-n_fail = sum(strcmp(T_rest.Verdict,'FAIL'));
-n_err  = sum(strcmp(T_rest.Verdict,'ERROR'));
-
-fprintf('\n  Restoration results: PASS=%d  FAIL=%d  ERROR=%d  (of 36)\n', n_pass, n_fail, n_err);
-if n_fail > 0
-    fails = T_rest(strcmp(T_rest.Verdict,'FAIL'),:);
-    fprintf('  Failed scenarios:\n');
-    for i = 1:height(fails)
-        fprintf('    %s-%s LM=%.2f : B4=%.4f pu  B5=%.4f pu\n', ...
-            fails.FaultType{i}, fails.FaultBus{i}, fails.LoadMult(i), ...
-            fails.Vpost_B4_pu(i), fails.Vpost_B5_pu(i));
-    end
-end
-
-try; writetable(T_rest,'restoration_results_full.csv'); catch; end
-
-% Text summary for thesis
-fid2 = fopen('restoration_summary.txt','w');
-fprintf(fid2,'RESTORATION SCENARIO SUITE\nGenerated: %s\n\n', datestr(now));
-fprintf(fid2,'36 scenarios: 12 fault classes x 3 load levels (LM=0.70/1.00/1.30)\n');
-fprintf(fid2,'Topology: T1 -> B2 -> B3 -> B4 (series radial), T2 -> B5 (SXEW)\n');
-fprintf(fid2,'Voltage limit: 0.95-1.05 pu (11 kV base)\n\n');
-fprintf(fid2,'RESULTS: PASS=%d  FAIL=%d  ERROR=%d\n\n', n_pass, n_fail, n_err);
-fprintf(fid2,'%-6s %-5s %-6s %-12s %-12s %-8s\n', ...
-    'Bus','Type','LM','Vpost_B4(pu)','Vpost_B5(pu)','Verdict');
-fprintf(fid2,'%s\n', repmat('-',1,55));
-for i = 1:height(T_rest)
-    fprintf(fid2,'%-6s %-5s %-6.2f %-12.4f %-12.4f %-8s\n', ...
-        T_rest.FaultBus{i}, T_rest.FaultType{i}, T_rest.LoadMult(i), ...
-        T_rest.Vpost_B4_pu(i), T_rest.Vpost_B5_pu(i), T_rest.Verdict{i});
-end
-fclose(fid2);
-
-fprintf('      Saved: restoration_results_full.csv\n');
-fprintf('      Saved: restoration_summary.txt\n');
-fprintf('      Elapsed: %s\n\n', char(t_rest_elapsed));
-
-%% =========================================================================
-%%  SECTION 6 — KEY THESIS FIGURES
-%% =========================================================================
-
-fprintf('[6/6] GENERATING FIGURES\n');
-
-set(0,'DefaultAxesFontSize',9,'DefaultTextFontSize',9,'DefaultFigureColor','w');
-DPI = '-r300';
-
-%% Fig 1: OOB error curve
-f = figure('Visible','on','Position',[50 50 600 360]);
-oob_curve = oobError(rf_model);
-plot(1:N_TREES, oob_curve*100, 'b-','LineWidth',1.2);
-xline(N_TREES,'r--',sprintf('N=%d (OOB=%.2f%%)',N_TREES,oob_err*100),'FontSize',8);
-xlabel('Number of Trees'); ylabel('OOB Error (%)');
-title('Random Forest OOB Error Convergence');
-grid on; ylim([0 min(100, max(oob_curve)*100+5)]);
-saveas(f, 'figures/Fig5_5_oob_error_curve.png'); print(f,DPI,'-dpng','figures/Fig5_5_oob_error_curve.png');
-fprintf('      Fig5_5_oob_error_curve.png\n');
-
-%% Fig 2: Confusion matrix
-C_mat = confusionmat(y_test, y_pred);
-C_norm = C_mat ./ max(sum(C_mat,2),1);
-f = figure('Visible','on','Position',[50 50 700 620]);
-imagesc(C_norm); colormap(parula); colorbar;
-xlabel('Predicted Class'); ylabel('True Class');
-xticks(1:13); xticklabels(CLASS_NAMES); xtickangle(45);
-yticks(1:13); yticklabels(CLASS_NAMES);
-title(sprintf('Normalised Confusion Matrix (Accuracy: %.2f%%)', acc*100));
-% Annotate cells
-for r=1:13; for c2=1:13
-    if C_mat(r,c2)>0
-        tc = 'w'; if C_norm(r,c2)>0.5; tc='k'; end
-        text(c2,r,num2str(C_mat(r,c2)),'HorizontalAlignment','center','FontSize',7,'Color',tc);
-    end
-end; end
-saveas(f,'figures/Fig5_6_confusion_matrix.png'); print(f,DPI,'-dpng','figures/Fig5_6_confusion_matrix.png');
-fprintf('      Fig5_6_confusion_matrix.png\n');
-
-%% Fig 3: Feature importance
-imp = rf_model.OOBPermutedPredictorDeltaError;
-[imp_s, imp_idx] = sort(imp,'descend');
-f = figure('Visible','on','Position',[50 50 680 420]);
-barh(imp_s(end:-1:1),'FaceColor',[0.2 0.4 0.8]);
-yticks(1:n_feat); yticklabels(feature_names(imp_idx(end:-1:1)));
-xlabel('OOB Permutation Importance (Mean Decrease Accuracy)');
-title('Feature Importance — OOB Permutation');
-grid on;
-saveas(f,'figures/Fig5_7_feature_importance.png'); print(f,DPI,'-dpng','figures/Fig5_7_feature_importance.png');
-fprintf('      Fig5_7_feature_importance.png\n');
-
-%% Fig 4: Per-class metrics bar chart
-f = figure('Visible','on','Position',[50 50 780 400]);
-x_cls = 0:12;
-hold on;
-bar(x_cls-0.25, per_cls(:,1), 0.2,'FaceColor',[0.2 0.5 0.8],'DisplayName','Precision');
-bar(x_cls,      per_cls(:,2), 0.2,'FaceColor',[0.2 0.7 0.3],'DisplayName','Recall');
-bar(x_cls+0.25, per_cls(:,3), 0.2,'FaceColor',[0.8 0.4 0.1],'DisplayName','F1');
-xticks(0:12); xticklabels(CLASS_NAMES); xtickangle(40);
-ylabel('Score'); ylim([0 1.1]); legend('Location','southeast');
-yline(1,'k:'); title('Per-Class Precision, Recall, F1');
-grid on;
-saveas(f,'figures/Fig5_8_per_class_metrics.png'); print(f,DPI,'-dpng','figures/Fig5_8_per_class_metrics.png');
-fprintf('      Fig5_8_per_class_metrics.png\n');
-
-%% Fig 5: CV fold accuracies
-f = figure('Visible','on','Position',[50 50 560 360]);
-bar(1:5, cv_acc*100, 'FaceColor',[0.3 0.5 0.8]);
-yline(cv_mean*100,'g--',sprintf('Mean=%.2f%%',cv_mean*100),'LineWidth',1.5,'LabelHorizontalAlignment','right');
-yline(acc*100,'r-',sprintf('Single-split=%.2f%%',acc*100),'LineWidth',1.2,'LabelHorizontalAlignment','right');
-yline(95,'k:','95%% target');
-xlabel('CV Fold'); ylabel('Accuracy (%)'); title('5-Fold Cross-Validation');
-ylim([90 101]); grid on;
-saveas(f,'figures/Fig5_9_cv_accuracy.png'); print(f,DPI,'-dpng','figures/Fig5_9_cv_accuracy.png');
-fprintf('      Fig5_9_cv_accuracy.png\n');
-
-%% Fig 6: Restoration voltage summary (post-restoration by bus and load)
-valid_rows = ~strcmp(T_rest.Verdict,'ERROR');
-T_v = T_rest(valid_rows,:);
-if height(T_v) > 0
-    f = figure('Visible','on','Position',[50 50 900 460]);
-    subplot(1,2,1);
-    lm_vals = unique(T_v.LoadMult);
-    clrs = lines(numel(lm_vals));
-    hold on;
-    for li = 1:numel(lm_vals)
-        rows = T_v(T_v.LoadMult==lm_vals(li),:);
-        plot(1:height(rows), rows.Vpost_B4_pu, 'o-','Color',clrs(li,:), ...
-            'DisplayName',sprintf('LM=%.2f',lm_vals(li)),'LineWidth',1.2);
-    end
-    yline(0.95,'r--','0.95 pu'); yline(1.05,'r--','1.05 pu');
-    xlabel('Scenario'); ylabel('Vpost B4 (pu)'); title('Post-restoration Bus B4');
-    legend('Location','best'); ylim([0.88 1.08]); grid on;
-
-    subplot(1,2,2);
-    hold on;
-    for li = 1:numel(lm_vals)
-        rows = T_v(T_v.LoadMult==lm_vals(li),:);
-        plot(1:height(rows), rows.Vpost_B5_pu, 's-','Color',clrs(li,:), ...
-            'DisplayName',sprintf('LM=%.2f',lm_vals(li)),'LineWidth',1.2);
-    end
-    yline(0.95,'r--','0.95 pu'); yline(1.05,'r--','1.05 pu');
-    xlabel('Scenario'); ylabel('Vpost B5 (pu)'); title('Post-restoration Bus B5');
-    legend('Location','best'); ylim([0.88 1.08]); grid on;
-
-    sgtitle(sprintf('Post-Restoration Voltages — %d/%d PASS',n_pass,n_pass+n_fail));
-    saveas(f,'figures/Fig5_14_restoration_voltages.png');
-    print(f,DPI,'-dpng','figures/Fig5_14_restoration_voltages.png');
-    fprintf('      Fig5_14_restoration_voltages.png\n');
-end
-
-fprintf('\n=================================================================\n');
-fprintf('  MASTER B COMPLETE\n');
-fprintf('  Accuracy: %.2f%%  |  Fault detection: %.2f%%  |  Macro F1: %.3f\n', ...
-    acc*100, fault_det*100, macro_f1_arith);
-fprintf('  Restoration: %d/36 PASS  |  %d FAIL  |  %d ERROR\n', n_pass, n_fail, n_err);
-fprintf('=================================================================\n');
-
-
-%% =========================================================================
-%%  LOCAL HELPER FUNCTIONS
-%% =========================================================================
-
-function scale_all_loads_B(model, LB, bus_keys, BASE_P, BASE_Q, lm)
-    for k = 1:numel(bus_keys)
-        blk = LB.(bus_keys{k});
-        P = BASE_P(k)*lm;  Q = BASE_Q(k)*lm;
+simstat('reset');                          % start the provable-work counters
+rows = {}; nErr = 0;
+zoneList  = {'B2','B3','B4','B5'};
+logf(LOG, sprintf('Restoration suite: %d scenarios x up to 2 sims each (expect ~%d Simulink runs).', ...
+    numel(zoneList)*numel(LOAD_LEVELS), 2*numel(zoneList)*numel(LOAD_LEVELS)));
+for zi = 1:numel(zoneList)
+    z = zoneList{zi};
+    for li = 1:numel(LOAD_LEVELS)
+        lm = LOAD_LEVELS(li);
+        tSc = tic;
         try
-            mn = get_param(blk,'MaskNames');
-        catch; continue; end
-        if any(strcmpi(mn,'P'))
-            try; set_param(blk,'P',num2str(P)); catch; end
-            if any(strcmpi(mn,'Q')); try; set_param(blk,'Q',num2str(Q)); catch; end; end
-        elseif any(strcmpi(mn,'ActivePower'))
-            try; set_param(blk,'ActivePower',num2str(P)); catch; end
-            if any(strcmpi(mn,'InductivePower')); try; set_param(blk,'InductivePower',num2str(Q)); catch; end; end
-        elseif any(strcmpi(mn,'NominalPower'))
-            try; set_param(blk,'NominalPower',sprintf('[%g %g]',P,Q)); catch; end
+            r = run_restoration(MODEL, BL, z, lm, T2_RATING_VA, VBAND, VBASE, rf);
+        catch ME
+            nErr = nErr + 1;
+            logf(LOG, sprintf('  *** SCENARIO ERROR %s LM=%.2f: %s', z, lm, ME.message));
+            fprintf(2, '%s\n', getReport(ME, 'extended', 'hyperlinks', 'off'));
+            r = struct('zone',z,'lm',lm,'predicted','','predOK','','status','ERROR','isolated',z, ...
+                'restored','','remainsT1','','tie','OPEN','breakers','','Vrest','','faultBusV',NaN,'note',ME.message);
+        end
+        rows(end+1,:) = { r.zone, r.lm, r.predicted, r.predOK, r.status, r.isolated, ...
+            r.restored, r.remainsT1, r.tie, r.breakers, r.Vrest, r.faultBusV, r.note }; %#ok<SAGROW>
+        logf(LOG, sprintf('  %s LM=%.2f -> pred=%s(%s) %-20s tie=%s isolated=%s tieRestored=[%s] onT1=[%s]  (%.1f s)', ...
+            r.zone, r.lm, r.predicted, r.predOK, r.status, r.tie, r.isolated, r.restored, r.remainsT1, toc(tSc)));
+    end
+end
+Tr = cell2table(rows,'VariableNames', ...
+    {'Zone','LoadMult','PredictedZone','PredictionCorrect','Status','IsolatedZone', ...
+     'RestoredZones','RemainsOnT1','TieState', ...
+     'BreakersOpened','RestoredVoltages_pu','FaultBusVoltage_pu','Note'});
+writetable(Tr, fullfile(OUT_ROOT,'restoration_results_v2.csv'));
+writetable(Tr, fullfile(OUT_ROOT,'restoration_results_v2.xlsx'));   % Excel copy for the thesis
+write_restoration_summary(fullfile(OUT_SUM,'restoration_summary_v2.txt'), Tr);
+if nErr > 0
+    error('MASTER_B:RestorationErrors', ...
+        ['%d of %d restoration scenarios ERRORED — the results table is NOT valid.\n' ...
+         'Fix the cause (full reports above and in pipeline_log_v2.txt) and re-run.'], ...
+        nErr, height(Tr));
+end
+
+%% =========================================================================
+%%  [2b] SEVERE-CASE FAULT + RESTORATION WAVEFORMS  (proof of operation)
+%%  ONLY the worst (near-bolted, LM=1.0) SLG, LL and 3PH case per zone =
+%%  12 waveform cases total, NOT all 36 scenarios. Each case is captured in
+%%  two stages of the same fault (the model drives breakers by static
+%%  Constants, so a single run holds one switch state):
+%%    Stage 1 : fault on the NORMAL network (tie open)  -> shows the fault
+%%    Stage 2 : after zone isolation + tie decision      -> shows restoration
+%% =========================================================================
+logf(LOG,'Capturing severe-case fault + restoration waveform DATA (12 cases; figures rendered by MASTER_C) ...');
+WAVE_DIR = fullfile(OUT_ROOT,'waveforms_v2');
+if ~exist(WAVE_DIR,'dir'); mkdir(WAVE_DIR); end
+severeTypes = {'SLG','LL','3PH'};
+wman = {}; wcount = 0;
+for zi = 1:numel(zoneList)
+    z = zoneList{zi};
+    for ti = 1:numel(severeTypes)
+        ft = severeTypes{ti};
+        nfig = (zi-1)*numel(severeTypes) + ti;   % 1..12 (figure order used by MASTER_C)
+        try
+            [datFile, status] = capture_case(MODEL, BL, z, ft, ...
+                T2_RATING_VA, VBAND, VBASE, WAVE_DIR, nfig, rf);
+            wcount = wcount + 1;
+            wman(end+1,:) = {sprintf('%s-%s',ft,z), z, ft, status, relpath(datFile)}; %#ok<SAGROW>
+            logf(LOG, sprintf('  waveform %-3s-%s -> %-22s (live-sim data saved)', ft, z, status));
+        catch ME
+            logf(LOG, sprintf('  waveform %-3s-%s ERROR: %s', ft, z, ME.message));
+        end
+    end
+end
+if ~isempty(wman)
+    writetable(cell2table(wman,'VariableNames', ...
+        {'Case','Zone','FaultType','RestorationStatus','DataFile'}), ...
+        fullfile(WAVE_DIR,'waveform_manifest_v2.csv'));
+end
+logf(LOG, sprintf('Severe-case waveform data captured: %d/12 (MASTER_C renders the figures).', wcount));
+if wcount < 12
+    logf(LOG, sprintf('*** WARNING: only %d of 12 waveform cases captured — see errors above.', wcount));
+end
+
+logf(LOG, sprintf('PROOF OF WORK: %d Simulink runs, %.1f min total simulation wall time.', ...
+    simstat('count'), simstat('time')/60));
+if simstat('count') < 30
+    logf(LOG, '*** WARNING: fewer than 30 simulations ran — the restoration/waveform suites are incomplete.');
+end
+logf(LOG, sprintf('MASTER_B (v2) complete %s', datestr(now)));
+fprintf('\nMASTER_B (v2) complete. Test accuracy = %.4f.\n', acc);
+fprintf('Proof of work: %d simulations, %.1f min simulation wall time (details in pipeline_log_v2.txt).\n', ...
+    simstat('count'), simstat('time')/60);
+
+%% =========================================================================
+%%  LOCAL FUNCTIONS
+%% =========================================================================
+function r = run_restoration(MODEL, BL, zone, lm, T2VA, VBAND, VBASE, rf)
+% CLOSED-LOOP scenario: the switching decision is driven by the RF PREDICTION
+% computed from Stage-1 measurements — never by the known injected zone.
+% Stage 1: fault on the normal network (training conditions) -> classify.
+% Stage 2: apply the isolation/tie policy FOR THE PREDICTED ZONE -> verify.
+    FP.A='FaultA'; FP.B='FaultB'; FP.C='FaultC'; FP.G='GroundFault';
+    FP.RF='FaultResistance'; FP.RG='GroundResistance'; FP.ST='SwitchTimes'; FP.IS='InitialStates';
+
+    set_normal_state(BL);
+    clear_all_faults(BL,FP);
+    set_loads(BL, lm);
+
+    % representative near-bolted SLG at the zone (t on = 0.5 s)
+    set_param(BL.fault.(zone), FP.A,'on',FP.B,'off',FP.C,'off',FP.G,'on', ...
+        FP.RF,'0.001', FP.RG,'0.001', FP.ST,'[0.5 2.0]', FP.IS,'0');
+
+    % ---- STAGE 1: detection on the NORMAL network ----
+    s1 = simrun(MODEL);
+    % sampling instant from MEASURED disturbance detection, not the known onset
+    [tdet, distFound] = detect_onset(s1, VBASE);
+    if distFound; tsamp = min(tdet+0.5, 1.9); else; tsamp = 1.5; end
+    predZone  = zone_of_class(str2double(predict(rf, features24(s1, tsamp))));
+    predMatch = strcmp(predZone, zone);
+    decision  = predZone;                      % the policy input IS the prediction
+
+    switch decision
+        case 'Healthy'
+            brk=''; isolated='(none)'; restored={}; attemptTie=false; remainsT1={'B2','B3','B4'};
+        case 'B2'
+            open_cb(BL,{'CB_MAIN','CB_BUS1_B3'}); brk='CB_MAIN,CB_BUS1_B3';
+            isolated='B2'; restored={'B3','B4'}; attemptTie=true;  remainsT1={};
+        case 'B3'
+            open_cb(BL,{'CB_BUS1_B3','CB_BUS1_B4'}); brk='CB_BUS1_B3,CB_BUS1_B4';
+            isolated='B3'; restored={'B4'}; attemptTie=true;       remainsT1={'B2'};
+        case 'B4'
+            open_cb(BL,{'CB_BUS1_B4'}); brk='CB_BUS1_B4';
+            isolated='B4'; restored={}; attemptTie=false;          remainsT1={'B2','B3'};
+        case 'B5'
+            open_cb(BL,{'CB_T2_BUS5'}); brk='CB_T2_BUS5';
+            isolated='B5'; restored={}; attemptTie=false;          remainsT1={'B2','B3','B4'};
+        otherwise
+            error('run_restoration:badDecision','No policy for predicted zone "%s".', decision);
+    end
+
+    capOk = true; restVA = NaN;
+    if attemptTie
+        % capacity from MEASURED pre-fault load (Stage-1 window [0.30,0.45] s):
+        % neither the nameplate values nor the known load multiplier are given
+        % to the decision logic. CT placement in this model: each measurement
+        % is in series with its OWN fault+load branch (verified: healthy CT
+        % currents equal the individual load currents), so per-bus VAs are
+        % independent and must be SUMMED. Voltage verification is the backstop.
+        restVA = 0;
+        for i=1:numel(restored)
+            restVA = restVA + measured_bus_va(s1, restored{i}, [0.30 0.45]);
+        end
+        restVA = restVA + measured_bus_va(s1, 'B5', [0.30 0.45]);   % B5 already on T2
+        capOk  = restVA <= T2VA;
+    end
+
+    % For B4/B5 the tie stays OPEN by design (closing would backfeed the
+    % faulted zone). That is the correct action, not a blocked restoration
+    % attempt, so the status is ISOLATED_NO_TIE with the reason recorded.
+    tieClosed = false; status = 'ISOLATED_NO_TIE';
+    if ~attemptTie
+        tieReason = 'tie kept OPEN by design (would backfeed faulted zone); healthy buses remain on T1';
+    elseif ~capOk
+        status = 'BLOCKED_BY_CAPACITY';
+        tieReason = sprintf('tie close refused: reconnect %.2f MVA exceeds T2 %.2f MVA', restVA/1e6, T2VA/1e6);
+    else
+        tieClosed = true;
+        tieReason = sprintf('tie closed: reconnect %.2f MVA within T2 %.2f MVA', restVA/1e6, T2VA/1e6);
+    end
+    set_switch(BL.ctrl.TIE, tieClosed);
+
+    % ---- STAGE 2: network after the (prediction-driven) switching action ----
+    if strcmp(decision,'Healthy')
+        sOut = s1;                       % no switching commanded -> stage-1 network stands
+    else
+        sOut = simrun(MODEL);
+    end
+
+    Vpu = [];
+    for i=1:numel(restored)
+        Vpu(end+1) = pu_voltage(sOut, ['RMS_V_' restored{i}], VBASE, 1.6); %#ok<AGROW>
+    end
+    Vok = isempty(Vpu) || all(Vpu>=VBAND(1) & Vpu<=VBAND(2));
+    if tieClosed && ~Vok
+        set_switch(BL.ctrl.TIE, false);
+        status = 'ISOLATED_NO_TIE';
+        tieReason = 'tie reverted OPEN: post-restoration voltage outside 0.95-1.05 pu band';
+        sOut = simrun(MODEL);
+        Vpu = []; for i=1:numel(restored)
+            Vpu(end+1) = pu_voltage(sOut,['RMS_V_' restored{i}],VBASE,1.6); end %#ok<AGROW>
+    elseif tieClosed && Vok
+        status = 'RESTORED';
+    end
+
+    % success criterion is judged against the ACTUAL faulted zone
+    faultBusV = pu_voltage(sOut, ['RMS_V_' zone], VBASE, 1.6);
+
+    if ~predMatch
+        % Wrong prediction -> actions were applied to the wrong zone. This is a
+        % reportable OUTCOME of the closed loop, not a script error.
+        status = 'MISPREDICTED_WRONG_ACTION';
+        tieReason = sprintf('RF predicted %s but actual fault is %s -> policy acted on the wrong zone', predZone, zone);
+    elseif faultBusV > 0.8
+        % Correct prediction but the faulted zone is still energised: the
+        % breaker command did not take effect -> genuine failure, abort loudly.
+        error('run_restoration:IsolationIneffective', ...
+            'Faulted zone %s still reads %.3f pu after isolation — breaker action did not take effect.', ...
+            zone, faultBusV);
+    end
+
+    clear_all_faults(BL,FP); set_normal_state(BL);
+
+    r.zone=zone; r.lm=lm; r.predicted=predZone; r.predOK=ternary(predMatch,'YES','NO');
+    r.status=status; r.isolated=isolated;
+    r.restored=strjoin(restored,'+'); r.remainsT1=strjoin(remainsT1,'+');
+    r.tie=ternary(tieClosed,'CLOSED','OPEN');
+    r.breakers=brk; r.Vrest=num2str(round(Vpu,4)); r.faultBusV=faultBusV;
+    r.note=tieReason;
+end
+
+function open_cb(BL, names)
+    for i=1:numel(names); set_switch(BL.ctrl.(names{i}), false); end
+end
+
+function v = pu_voltage(sOut, varname, VBASE, t)
+    M = get_rms(sOut, varname); tt=M(:,1);
+    [~,idx]=min(abs(tt-t));
+    phaseRMS = mean(M(max(1,idx-3):min(size(M,1),idx+3), 2:4),1);   % mean of 3 phase RMS V
+    v  = mean(phaseRMS) / VBASE;                                    % RMS_V is line-to-line -> pu on 11 kV LL base
+end
+
+
+function va = read_xfmr_va(MODEL, tok)
+% Read NominalPower = [S, f] directly from the ACTUAL transformer block.
+% NO fallback: if the value cannot be read from the live model, ABORT loudly.
+    b = find_xfmr(MODEL, tok);
+    if isempty(b)
+        error('read_xfmr:notfound', ...
+            'No transformer matching "%s" found (probed mask parameters of all root-level blocks).', tok);
+    end
+    nums = str2num(get_param(b,'NominalPower')); %#ok<ST2NM>
+    if isempty(nums) || nums(1) <= 0
+        error('read_xfmr:badvalue','Could not parse NominalPower of block "%s".', regexprep(b,'\s+',' '));
+    end
+    va = nums(1);
+    fprintf('  [model read] %s rating = %.2f MVA   (block: %s)\n', tok, va/1e6, regexprep(b,'\s+',' '));
+end
+
+function v = read_xfmr_v2(MODEL, tok)
+% Read the secondary line-to-line voltage = first element of Winding2 = [Vll R L].
+% NO fallback: aborts if unreadable.
+    b = find_xfmr(MODEL, tok);
+    if isempty(b)
+        error('read_xfmr:notfound', ...
+            'No transformer matching "%s" found (probed mask parameters of all root-level blocks).', tok);
+    end
+    w = str2num(get_param(b,'Winding2')); %#ok<ST2NM>
+    if isempty(w) || w(1) <= 0
+        error('read_xfmr:badvalue','Could not parse Winding2 of block "%s".', regexprep(b,'\s+',' '));
+    end
+    v = w(1);
+    fprintf('  [model read] %s secondary voltage = %.0f V line-to-line   (block: %s)\n', tok, v, regexprep(b,'\s+',' '));
+end
+
+function b = find_xfmr(MODEL, tok)
+% Identify the transformer by PROBING ACTUAL MASK PARAMETERS in the LIVE model:
+% the root-level block whose normalised name starts with tok AND whose mask
+% really contains NominalPower + Winding2. No BlockType/SourceBlock filtering —
+% those are .slx file-format attributes that linked library blocks do NOT
+% report at runtime, which is why the previous search missed the transformer.
+    b = '';
+    blks = find_system(MODEL,'SearchDepth',1);
+    for i = 1:numel(blks)
+        if strcmp(blks{i}, MODEL); continue; end
+        nm = strtrim(regexprep(get_param(blks{i},'Name'),'\s+',' '));
+        if ~startsWith(nm, tok); continue; end
+        try
+            mn = get_param(blks{i},'MaskNames');
+            if any(strcmp(mn,'NominalPower')) && any(strcmp(mn,'Winding2'))
+                b = blks{i}; return;
+            end
+        catch
         end
     end
 end
 
 
-function set_breaker_simple(blk, init_state, sw_times_str)
-%SET_BREAKER_SIMPLE  Set breaker initial state and switch times.
-%  Auto-discovers the correct parameter names from the block mask.
-    try
-        mn = get_param(blk,'MaskNames');
-    catch; return; end
-
-    % Find InitialState parameter
-    for cand = {'InitialState','InitialStates','sw0','initial_state','status'}
-        if any(strcmpi(mn,cand{1}))
-            try; set_param(blk,mn{strcmpi(mn,cand{1})},init_state); catch; end
-            break;
-        end
-    end
-
-    % Find SwitchTimes parameter
-    for cand = {'SwitchTimes','sw_time','Ts','TransitionTimes','switching_times'}
-        if any(strcmpi(mn,cand{1}))
-            try; set_param(blk,mn{strcmpi(mn,cand{1})},sw_times_str); catch; end
-            break;
-        end
+function [prec, rec, f1] = prf_from_confusion(Cm)
+    n = size(Cm,1); prec=zeros(n,1); rec=zeros(n,1); f1=zeros(n,1);
+    for i=1:n
+        tp = Cm(i,i); fp = sum(Cm(:,i))-tp; fn = sum(Cm(i,:))-tp;
+        prec(i) = tp/max(tp+fp,eps); rec(i)=tp/max(tp+fn,eps);
+        f1(i)   = 2*prec(i)*rec(i)/max(prec(i)+rec(i),eps);
     end
 end
 
-
-function v_mean = window_mean(sig, t, t_start, t_end, w)
-%WINDOW_MEAN  Mean of sig over [t_start, t_end], averaged over w samples.
-    idx = find(t >= t_start & t < t_end);
-    if isempty(idx)
-        v_mean = NaN; return;
+function write_metrics_report(f, acc, prec, rec, f1, Cm, cvACC, oobErr, imp, featNames, names, ntr, nte)
+    fid=fopen(f,'w');
+    fprintf(fid,'RANDOM FOREST METRICS REPORT (v2)\nGenerated: %s\n\n',datestr(now));
+    fprintf(fid,'Train/Test: %d / %d   Trees: 500   Cost(fault->Healthy)=12.5x\n\n',ntr,nte);
+    fprintf(fid,'OVERALL TEST ACCURACY : %.4f (%.2f%%)\n\n',acc,acc*100);
+    fprintf(fid,'PER-CLASS PRECISION / RECALL / F1\n');
+    for i=1:numel(names)
+        fprintf(fid,'  %2d %-9s  P=%.3f  R=%.3f  F1=%.3f\n',i-1,names{i},prec(i),rec(i),f1(i));
     end
-    idx = idx(max(1,end-w+1):end);
-    v_mean = mean(abs(sig(idx)));
+    fprintf(fid,'\nMACRO  P=%.3f  R=%.3f  F1=%.3f\n',mean(prec),mean(rec),mean(f1));
+    fprintf(fid,'\nFIVE-FOLD CROSS-VALIDATION ACCURACY\n');
+    for i=1:numel(cvACC); fprintf(fid,'  Fold %d: %.4f\n',i,cvACC(i)); end
+    fprintf(fid,'  Mean: %.4f\n',mean(cvACC));
+    fprintf(fid,'\nOUT-OF-BAG ERROR (final): %.4f\n',oobErr(end));
+    fprintf(fid,'\nTOP-8 FEATURE IMPORTANCE (OOB permutation delta error)\n');
+    [~,ord]=sort(imp,'descend');
+    for i=1:min(8,numel(ord)); fprintf(fid,'  %-8s : %.4f\n',featNames{ord(i)},imp(ord(i))); end
+    fprintf(fid,'\nCONFUSION MATRIX (rows=true 0..12, cols=pred 0..12)\n');
+    for i=1:size(Cm,1); fprintf(fid,'  %s\n',num2str(Cm(i,:),'%5d')); end
+    fprintf(fid,'\nNOTE: Only simple, defendable metrics are reported. No Wilson interval,\n');
+    fprintf(fid,'McNemar test, bootstrap confidence interval, or p-value is used.\n');
+    fclose(fid);
 end
+
+function write_restoration_summary(f, T)
+    fid=fopen(f,'w');
+    fprintf(fid,'RESTORATION SUMMARY (v2) — conditional, topology-limited\nGenerated: %s\n\n',datestr(now));
+    fprintf(fid,'Tie policy: closed only for upstream faults (B2, B3) when the T2 capacity and\n');
+    fprintf(fid,'0.95-1.05 pu voltage checks pass. For B4 and B5 faults the tie is kept OPEN by\n');
+    fprintf(fid,'design, because closing it would backfeed the faulted zone; the healthy buses\n');
+    fprintf(fid,'listed under RemainsOnT1 never lose supply (they stay on the T1 main path).\n');
+    fprintf(fid,'Full restoration of all healthy buses is NOT claimed for every fault location.\n\n');
+    fprintf(fid,'CLOSED LOOP: every switching decision below was driven by the RF\n');
+    fprintf(fid,'prediction computed from Stage-1 measurements on the normal network,\n');
+    fprintf(fid,'never by the known injected zone.\n\n');
+    fprintf(fid,'%-5s %-8s %-9s %-5s %-24s %-9s %-9s %-12s %-12s\n', ...
+        'Zone','LoadMlt','Pred','OK','Status','Isolated','Tie','TieRestored','RemainsOnT1');
+    for i=1:height(T)
+        fprintf(fid,'%-5s %-8.2f %-9s %-5s %-24s %-9s %-9s %-12s %-12s\n', T.Zone{i}, T.LoadMult(i), ...
+            T.PredictedZone{i}, T.PredictionCorrect{i}, T.Status{i}, T.IsolatedZone{i}, ...
+            T.TieState{i}, T.RestoredZones{i}, T.RemainsOnT1{i});
+    end
+    okPred = all(strcmp(T.PredictionCorrect,'YES'));
+    okIso = all(cellfun(@(z,iz) strcmp(z,iz), T.Zone, T.IsolatedZone));
+    b45 = ismember(T.Zone,{'B4','B5'});
+    okBackfeed = all(strcmp(T.TieState(b45),'OPEN'));
+    fprintf(fid,'\nCHECK: RF predicted the correct zone in every case : %s\n',tern(okPred));
+    fprintf(fid,'CHECK: faulted zone isolated in every case         : %s\n',tern(okIso));
+    fprintf(fid,'CHECK: tie never CLOSED for B4/B5 faults           : %s\n',tern(okBackfeed));
+    fclose(fid);
+end
+function s=tern(b); if b; s='PASS'; else; s='FAIL'; end; end
+function s=ternary(c,a,b); if c; s=a; else; s=b; end; end
+
+% ---- shared model helpers (standalone copies) ----
+function BL = discover_blocks(MODEL)
+    z={'B2','B3','B4','B5'}; BL.fault=struct(); BL.load=struct(); BL.meas=struct();
+    for k=1:numel(z)
+        BL.fault.(z{k})=pick(MODEL,{['Fault_' z{k}], leg(z{k},'Fault_SXEW')},'Reference');
+        BL.load.(z{k}) =pick(MODEL,{['DL_' z{k}],    leg(z{k},'DL_SXEW')},   'Reference');
+        BL.meas.(z{k}) =pick(MODEL,{['Measurement DL_' z{k}],['Measurement_DL_' z{k}]},'Reference');
+    end
+    BL.cb.CB_MAIN=pick(MODEL,{'CB_MAIN'},'Reference');
+    BL.cb.CB_BUS1_B3=pick(MODEL,{'CB_BUS1_B3'},'Reference');
+    BL.cb.CB_BUS1_B4=pick(MODEL,{'CB_BUS1_B4'},'Reference');
+    BL.cb.CB_T2_BUS5=pick(MODEL,{'CB_T2_BUS5'},'Reference');
+    BL.cb.TIE_SWITCH=pick(MODEL,{'TIE_SWITCH'},'Reference');
+    BL.ctrl.CB_MAIN=pick_ctrl(MODEL,'CB_MAIN');
+    BL.ctrl.CB_BUS1_B3=pick_ctrl(MODEL,'CB_BUS1_B3');
+    BL.ctrl.CB_BUS1_B4=pick_ctrl(MODEL,'CB_BUS1_B4');
+    BL.ctrl.CB_T2_BUS5=pick_ctrl(MODEL,'CB_T2_BUS5');
+    BL.ctrl.TIE=pick_ctrl(MODEL,'TIE');
+end
+function s=leg(zone,name); if strcmp(zone,'B5'); s=name; else; s=''; end; end
+function p=pick(MODEL,cands,bt)
+    p='';
+    for i=1:numel(cands)
+        nm=cands{i}; if isempty(nm); continue; end
+        h=find_system(MODEL,'SearchDepth',1,'BlockType',bt,'Name',nm);
+        if isempty(h)
+            h=find_system(MODEL,'SearchDepth',1,'RegExp','on','Name', ...
+               ['^' regexprep(regexptranslate('escape',nm),'\s+','\\s+') '$']);
+        end
+        if ~isempty(h); p=getfullname(h{1}); return; end
+    end
+    error('pick:notfound','none of: %s',strjoin(cands,', '));
+end
+function p=pick_ctrl(MODEL,tok)
+    cs=find_system(MODEL,'SearchDepth',1,'BlockType','Constant');
+    for i=1:numel(cs)
+        nm=regexprep(get_param(cs{i},'Name'),'\s+',' ');
+        if contains(nm,tok); p=getfullname(cs{i}); return; end
+    end
+    error('pick_ctrl:notfound','no Constant matching %s',tok);
+end
+function set_switch(ctrl,closed); set_param(ctrl,'Value',num2str(double(logical(closed)))); end
+function set_normal_state(BL)
+    set_switch(BL.ctrl.CB_MAIN,true); set_switch(BL.ctrl.CB_BUS1_B3,true);
+    set_switch(BL.ctrl.CB_BUS1_B4,true); set_switch(BL.ctrl.CB_T2_BUS5,true);
+    set_switch(BL.ctrl.TIE,false);
+end
+function clear_all_faults(BL,FP)
+    z=fieldnames(BL.fault);
+    for k=1:numel(z)
+        set_param(BL.fault.(z{k}),FP.A,'off',FP.B,'off',FP.C,'off',FP.G,'off', ...
+                  FP.ST,'[1000000 1000001]',FP.IS,'0');
+    end
+end
+function set_loads(BL,lm)
+    z=fieldnames(BL.load);
+    for k=1:numel(z)
+        b=BL.load.(z{k});
+        for pn={'ActivePower','InductiveReactivePower'}
+            try
+                mn=get_param(b,'MaskNames');
+                if any(strcmp(mn,pn{1}))
+                    ud=get_param(b,'UserData'); key=matlab.lang.makeValidName(pn{1});
+                    if ~isstruct(ud)||~isfield(ud,key)
+                        base=str2double(get_param(b,pn{1}));
+                        if ~isstruct(ud); ud=struct(); end; ud.(key)=base; set_param(b,'UserData',ud);
+                    else; base=ud.(key); end
+                    set_param(b,pn{1},num2str(base*lm));
+                end
+            catch; end
+        end
+    end
+end
+function M=get_rms(sOut,varname)
+    s=[]; try, s=sOut.get(varname); catch, end
+    if isempty(s)&&evalin('base',['exist(''' varname ''',''var'')']); s=evalin('base',varname); end
+    if isstruct(s)&&isfield(s,'signals'); t=s.time; val=s.signals.values;
+    elseif isa(s,'timeseries'); t=s.Time; val=s.Data;
+    else; error('get_rms:fmt','cannot read %s',varname); end
+    if size(val,2)<3; val=repmat(val(:,1),1,3); end
+    M=[t(:),val(:,1:3)];
+end
+function logf(file,msg,reset)
+    if nargin<3; reset=false; end
+    if reset; fid=fopen(file,'w'); else; fid=fopen(file,'a'); end
+    fprintf(fid,'[%s] %s\n',datestr(now,'yyyy-mm-dd HH:MM:SS'),msg); fclose(fid);
+    fprintf('%s\n',msg);
+end
+
+% ---- severe-case fault + restoration waveform capture ----
+function [datFile, status] = capture_case(MODEL, BL, zone, ftype, T2VA, VBAND, VBASE, WAVE_DIR, nfig, rf)
+    FP.A='FaultA'; FP.B='FaultB'; FP.C='FaultC'; FP.G='GroundFault';
+    FP.RF='FaultResistance'; FP.RG='GroundResistance'; FP.ST='SwitchTimes'; FP.IS='InitialStates';
+    switch ftype                              % severe, near-bolted phase config
+        case 'SLG'; pa='on'; pb='off'; pc='off'; pg='on';
+        case 'LL';  pa='on'; pb='on';  pc='off'; pg='off';
+        case '3PH'; pa='on'; pb='on';  pc='on';  pg='off';
+    end
+    lm = 1.0;
+
+    % ---------- Stage 1: fault on the NORMAL network (tie open) ----------
+    set_normal_state(BL); clear_all_faults(BL,FP); set_loads(BL,lm);
+    set_param(BL.fault.(zone), FP.A,pa,FP.B,pb,FP.C,pc,FP.G,pg, ...
+        FP.RF,'0.001', FP.RG,'0.001', FP.ST,'[0.5 2.0]', FP.IS,'0');
+    s1 = simrun(MODEL);
+    Vf = get_rms(s1, ['RMS_V_' zone]);        % faulted-bus RMS voltage (3 phase)
+    If = get_rms(s1, ['RMS_I_' zone]);        % faulted-bus RMS current (3 phase)
+
+    % PHYSICS CHECK: the fault must actually be present in Stage 1 — Phase A
+    % current during the fault window must rise clearly above the pre-fault level.
+    preI = winmean(If, 0.30, 0.45, 2);
+    fltI = winmean(If, 1.00, 1.20, 2);
+    if fltI < 2*max(preI, 1e-6)
+        error('capture_case:FaultNotApplied', ...
+            '%s fault at %s produced no current rise (pre %.1f A -> fault %.1f A) — fault block not active.', ...
+            ftype, zone, preI, fltI);
+    end
+
+    % ---------- CLOSED LOOP: predict the zone from Stage-1 features ----------
+    % The switching below is driven by the PREDICTION, not the injected zone;
+    % the sampling instant comes from measured disturbance detection.
+    [tdet, distFound] = detect_onset(s1, VBASE);
+    if distFound; tsamp = min(tdet+0.5, 1.9); else; tsamp = 1.5; end
+    predZone  = zone_of_class(str2double(predict(rf, features24(s1, tsamp))));
+    predMatch = strcmp(predZone, zone);
+    [brk, restored, attemptTie] = policy(predZone);
+    capOk = true;
+    if attemptTie
+        % capacity from MEASURED pre-fault load — no nameplate/lm ground truth.
+        % Each CT reads its OWN load branch in this model, so SUM per bus.
+        rv = 0;
+        for i=1:numel(restored); rv = rv + measured_bus_va(s1, restored{i}, [0.30 0.45]); end
+        rv = rv + measured_bus_va(s1, 'B5', [0.30 0.45]);
+        capOk = rv <= T2VA;
+    end
+    tieClosed = attemptTie && capOk;
+
+    % ---------- Stage 2: apply decision, same fault still active ----------
+    set_normal_state(BL);
+    for i=1:numel(brk); set_switch(BL.ctrl.(brk{i}), false); end
+    set_switch(BL.ctrl.TIE, tieClosed);
+    s2 = simrun(MODEL);
+    Vpu = struct();
+    for zz = {'B2','B3','B4','B5'}
+        Vpu.(zz{1}) = vpu_series(get_rms(s2, ['RMS_V_' zz{1}]), VBASE);
+    end
+    Vok = true;
+    for i=1:numel(restored)
+        vend = mean(Vpu.(restored{i})(end-20:end,2));
+        Vok = Vok && vend>=VBAND(1) && vend<=VBAND(2);
+    end
+    if tieClosed && ~Vok                       % voltage limit not met -> revert tie
+        set_switch(BL.ctrl.TIE,false); tieClosed=false;
+        s2 = simrun(MODEL);
+        for zz = {'B2','B3','B4','B5'}; Vpu.(zz{1}) = vpu_series(get_rms(s2,['RMS_V_' zz{1}]),VBASE); end
+    end
+    status = decide_status(attemptTie, capOk, tieClosed, Vok);
+    if ~predMatch
+        status = 'MISPREDICTED_WRONG_ACTION';   % closed-loop outcome, reported honestly
+    end
+
+    % ---------- save the LIVE-SIMULATION waveform data ----------
+    % Contains everything MASTER_C needs to render the two-stage figure without
+    % re-simulating: faulted-bus V/I (Stage 1) and all bus pu voltages (Stage 2).
+    datFile = fullfile(WAVE_DIR, sprintf('wave_%s_%s.mat', ftype, zone));
+    save(datFile, 'Vf','If','Vpu','status','zone','ftype','brk','restored', ...
+         'tieClosed','nfig','VBAND','predZone','predMatch');
+
+    clear_all_faults(BL,FP); set_normal_state(BL);
+end
+
+function [brk, restored, attemptTie] = policy(zone)
+% DETERMINISTIC protection action table — intentionally NOT learned. The zone
+% itself is what the classifier must infer from measurements; the zone->breaker
+% mapping is fixed by the physical topology and must stay deterministic and
+% auditable, as in any certifiable protection scheme.
+    switch zone
+        case 'Healthy'; brk={};                    restored={};          attemptTie=false;
+        case 'B2'; brk={'CB_MAIN','CB_BUS1_B3'};   restored={'B3','B4'}; attemptTie=true;
+        case 'B3'; brk={'CB_BUS1_B3','CB_BUS1_B4'};restored={'B4'};      attemptTie=true;
+        case 'B4'; brk={'CB_BUS1_B4'};             restored={};          attemptTie=false;
+        case 'B5'; brk={'CB_T2_BUS5'};             restored={};          attemptTie=false;
+        otherwise
+            error('policy:unknown','No policy for predicted zone "%s".', zone);
+    end
+end
+function st = decide_status(attemptTie, capOk, tieClosed, Vok)
+% B4/B5 (~attemptTie): tie kept OPEN by design — correct action, so ISOLATED_NO_TIE.
+    if ~attemptTie;             st='ISOLATED_NO_TIE';
+    elseif ~capOk;              st='BLOCKED_BY_CAPACITY';
+    elseif tieClosed && Vok;    st='RESTORED';
+    else;                       st='ISOLATED_NO_TIE'; end
+end
+function P = vpu_series(M, VBASE)
+    pu = mean(M(:,2:4),2) / VBASE;              % RMS_V is line-to-line -> pu (11 kV LL base), per timestep
+    P = [M(:,1), pu];
+end
+function s = simrun(MODEL)
+% Single instrumented Simulink run: wall-clock timed and counted, so the amount
+% of real simulation work MASTER_B performed is provable from the console/log.
+    set_param(MODEL,'StopTime','2.0');
+    t0 = tic;
+    s = sim(MODEL,'SimulationMode','normal','FastRestart','off', ...
+        'SaveOutput','on','SaveTime','on', ...
+        'SignalLogging','on','SignalLoggingName','logsout','SaveFormat','Dataset');
+    dt = toc(t0);
+    n = simstat('add', dt);
+    fprintf('      [sim #%d] %.1f s wall time\n', n, dt);
+end
+
+function out = simstat(cmd, dt)
+% Persistent counters of Simulink runs: how many, and total wall time.
+    persistent n total
+    if isempty(n); n = 0; total = 0; end
+    switch cmd
+        case 'reset'; n = 0; total = 0; out = 0;
+        case 'add';   n = n + 1; total = total + dt; out = n;
+        case 'count'; out = n;
+        case 'time';  out = total;
+    end
+end
+
+function v = winmean(M, t0, t1, col)
+% Mean of column <col> of [t A B C] within the time window [t0,t1].
+    t = M(:,1); v = mean(M(t>=t0 & t<=t1, col));
+end
+
+function f = features24(sOut, tsamp)
+% The same 24 RMS features the classifier was trained on (V,I x A,B,C at
+% B2..B5). tsamp is derived by the CALLER from the measured disturbance-
+% detection time (detect_onset) — the known injection time is never used.
+    V={'RMS_V_B2','RMS_V_B3','RMS_V_B4','RMS_V_B5'};
+    I={'RMS_I_B2','RMS_I_B3','RMS_I_B4','RMS_I_B5'};
+    f=zeros(1,24); c=0;
+    for k=1:4
+        Vm=get_rms(sOut,V{k}); Im=get_rms(sOut,I{k});
+        f(c+1:c+3)=at(Vm,tsamp); f(c+4:c+6)=at(Im,tsamp); c=c+6;
+    end
+end
+
+function [tdet, found] = detect_onset(sOut, VBASE)
+% DATA-DRIVEN disturbance detection — no ground-truth onset time is used.
+% Baseline window [0.30,0.45] s; the disturbance instant is the first sample
+% after 0.45 s where any bus phase current exceeds 1.5x its own baseline or
+% any bus voltage drops below 0.85 pu.
+    sigsI={'RMS_I_B2','RMS_I_B3','RMS_I_B4','RMS_I_B5'};
+    sigsV={'RMS_V_B2','RMS_V_B3','RMS_V_B4','RMS_V_B5'};
+    tdet=NaN; found=false; tCand=[];
+    for k=1:4
+        M=get_rms(sOut,sigsI{k}); t=M(:,1);
+        base=mean(M(t>=0.30 & t<=0.45, 2:4),1);
+        dev = M(:,2:4) > 1.5*max(base,1e-3);
+        idx=find(any(dev,2) & t>0.45, 1,'first');
+        if ~isempty(idx); tCand(end+1)=t(idx); end %#ok<AGROW>
+        Mv=get_rms(sOut,sigsV{k}); vpu=mean(Mv(:,2:4),2)/VBASE;
+        idx2=find(vpu<0.85 & Mv(:,1)>0.45, 1,'first');
+        if ~isempty(idx2); tCand(end+1)=Mv(idx2,1); end %#ok<AGROW>
+    end
+    if ~isempty(tCand); tdet=min(tCand); found=true; end
+end
+
+function va = measured_bus_va(sOut, bus, twin)
+% Apparent power estimated from MEASURED pre-fault RMS values in window twin:
+% S = sqrt(3) * VLL * I  (RMS_V signals are line-to-line).
+    Mv=get_rms(sOut,['RMS_V_' bus]); Mi=get_rms(sOut,['RMS_I_' bus]);
+    t=Mv(:,1); w = t>=twin(1) & t<=twin(2);
+    VLL = mean(mean(Mv(w,2:4),2));
+    ti=Mi(:,1); wi = ti>=twin(1) & ti<=twin(2);
+    I   = mean(mean(Mi(wi,2:4),2));
+    va  = sqrt(3)*VLL*I;
+end
+
+function row = at(M, t)
+    tt=M(:,1); [~,idx]=min(abs(tt-t)); lo=max(1,idx-2); hi=min(size(M,1),idx+2);
+    row=mean(M(lo:hi,2:4),1);
+end
+
+function z = zone_of_class(c)
+% Class label (0..12) -> fault zone. 0=Healthy; 1-3=B2; 4-6=B3; 7-9=B4; 10-12=B5.
+    if c==0; z='Healthy';
+    elseif c<=3; z='B2'; elseif c<=6; z='B3'; elseif c<=9; z='B4'; else; z='B5'; end
+end
+function p = relpath(f); p = strrep(f,[pwd filesep],''); end

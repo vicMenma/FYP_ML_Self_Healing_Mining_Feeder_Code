@@ -1,0 +1,32 @@
+figure_id,suggested_caption,source_type,block_or_data_source,output_file
+Figure_4_01,Full Simulink model of the sectionalised feeder,simulink_screenshot,"mining_feeder_layer_FINAL_baseline",outputs_v2_topology\figures\thesis_rewrite\chapter_4\Figure_4_01_full_simulink_model.png
+Figure_4_12,Healthy RMS voltage & current — 33kV Source,logged_signal,"RMS_V_33KV_Source,RMS_I_33KV_Source",outputs_v2_topology\figures\thesis_rewrite\chapter_4\Figure_4_12_healthy_source_VI.png
+Figure_4_13,Healthy RMS voltage & current — T1 11kV,logged_signal,"RMS_V_T1,RMS_I_T1",outputs_v2_topology\figures\thesis_rewrite\chapter_4\Figure_4_13_healthy_T1_VI.png
+Figure_4_14,Healthy RMS voltage & current — T2 11kV,logged_signal,"RMS_V_T2,RMS_I_T2",outputs_v2_topology\figures\thesis_rewrite\chapter_4\Figure_4_14_healthy_T2_VI.png
+Figure_4_15,Healthy RMS voltage & current — Bus B2,logged_signal,"RMS_V_B2,RMS_I_B2",outputs_v2_topology\figures\thesis_rewrite\chapter_4\Figure_4_15_healthy_B2_VI.png
+Figure_4_16,Healthy RMS voltage & current — Bus B3,logged_signal,"RMS_V_B3,RMS_I_B3",outputs_v2_topology\figures\thesis_rewrite\chapter_4\Figure_4_16_healthy_B3_VI.png
+Figure_4_17,Healthy RMS voltage & current — Bus B4,logged_signal,"RMS_V_B4,RMS_I_B4",outputs_v2_topology\figures\thesis_rewrite\chapter_4\Figure_4_17_healthy_B4_VI.png
+Figure_4_18,Healthy RMS voltage & current — Bus B5,logged_signal,"RMS_V_B5,RMS_V_SXEW,RMS_I_B5,RMS_I_SXEW",outputs_v2_topology\figures\thesis_rewrite\chapter_4\Figure_4_18_healthy_B5_VI.png
+Figure_5_08,Per-class voltage signature (RMS),data,"fault_dataset_v2.mat",outputs_v2_topology\figures\thesis_rewrite\chapter_5\Figure_5_08_voltage_sag_by_class.png
+Figure_5_09,Per-class current signature (RMS),data,"fault_dataset_v2.mat",outputs_v2_topology\figures\thesis_rewrite\chapter_5\Figure_5_09_current_rise_by_class.png
+Figure_5_01,Test-set confusion matrix,data,"confusion_v2.mat",outputs_v2_topology\figures\thesis_rewrite\chapter_5\Figure_5_01_confusion_matrix.png
+Figure_5_02,Per-class precision/recall/F1,data,"confusion_v2.mat",outputs_v2_topology\figures\thesis_rewrite\chapter_5\Figure_5_02_per_class_metrics.png
+Figure_5_03,OOB permutation feature importance,data,"feature_importance_v2.mat",outputs_v2_topology\figures\thesis_rewrite\chapter_5\Figure_5_03_feature_importance.png
+Figure_5_06,Random Forest OOB error convergence,data,"oob_error_curve_v2.mat",outputs_v2_topology\figures\thesis_rewrite\chapter_5\Figure_5_06_oob_error_curve.png
+Figure_5_07,Five-fold cross-validation accuracy,data,"cv_accuracy_v2.mat",outputs_v2_topology\figures\thesis_rewrite\chapter_5\Figure_5_07_cv_accuracy.png
+Figure_5_04,Restoration decision outcomes by status,data,"restoration_results_v2.csv",outputs_v2_topology\figures\thesis_rewrite\chapter_5\Figure_5_04_restoration_decision_summary.png
+Figure_5_05,Post-restoration voltage (eligible RESTORED cases),data,"restoration_results_v2.csv",outputs_v2_topology\figures\thesis_rewrite\chapter_5\Figure_5_05_post_restoration_voltage_comparison.png
+Figure_5B_03,3PH fault at B2 — fault & restoration waveform,logged_signal (MASTER_B live sim),"wave_3PH_B2.mat",outputs_v2_topology\figures\thesis_rewrite\chapter_5\Figure_5B_03_3PH_B2_fault_restoration.png
+Figure_5B_06,3PH fault at B3 — fault & restoration waveform,logged_signal (MASTER_B live sim),"wave_3PH_B3.mat",outputs_v2_topology\figures\thesis_rewrite\chapter_5\Figure_5B_06_3PH_B3_fault_restoration.png
+Figure_5B_09,3PH fault at B4 — fault & restoration waveform,logged_signal (MASTER_B live sim),"wave_3PH_B4.mat",outputs_v2_topology\figures\thesis_rewrite\chapter_5\Figure_5B_09_3PH_B4_fault_restoration.png
+Figure_5B_12,3PH fault at B5 — fault & restoration waveform,logged_signal (MASTER_B live sim),"wave_3PH_B5.mat",outputs_v2_topology\figures\thesis_rewrite\chapter_5\Figure_5B_12_3PH_B5_fault_restoration.png
+Figure_5B_02,LL fault at B2 — fault & restoration waveform,logged_signal (MASTER_B live sim),"wave_LL_B2.mat",outputs_v2_topology\figures\thesis_rewrite\chapter_5\Figure_5B_02_LL_B2_fault_restoration.png
+Figure_5B_05,LL fault at B3 — fault & restoration waveform,logged_signal (MASTER_B live sim),"wave_LL_B3.mat",outputs_v2_topology\figures\thesis_rewrite\chapter_5\Figure_5B_05_LL_B3_fault_restoration.png
+Figure_5B_08,LL fault at B4 — fault & restoration waveform,logged_signal (MASTER_B live sim),"wave_LL_B4.mat",outputs_v2_topology\figures\thesis_rewrite\chapter_5\Figure_5B_08_LL_B4_fault_restoration.png
+Figure_5B_11,LL fault at B5 — fault & restoration waveform,logged_signal (MASTER_B live sim),"wave_LL_B5.mat",outputs_v2_topology\figures\thesis_rewrite\chapter_5\Figure_5B_11_LL_B5_fault_restoration.png
+Figure_5B_01,SLG fault at B2 — fault & restoration waveform,logged_signal (MASTER_B live sim),"wave_SLG_B2.mat",outputs_v2_topology\figures\thesis_rewrite\chapter_5\Figure_5B_01_SLG_B2_fault_restoration.png
+Figure_5B_04,SLG fault at B3 — fault & restoration waveform,logged_signal (MASTER_B live sim),"wave_SLG_B3.mat",outputs_v2_topology\figures\thesis_rewrite\chapter_5\Figure_5B_04_SLG_B3_fault_restoration.png
+Figure_5B_07,SLG fault at B4 — fault & restoration waveform,logged_signal (MASTER_B live sim),"wave_SLG_B4.mat",outputs_v2_topology\figures\thesis_rewrite\chapter_5\Figure_5B_07_SLG_B4_fault_restoration.png
+Figure_5B_10,SLG fault at B5 — fault & restoration waveform,logged_signal (MASTER_B live sim),"wave_SLG_B5.mat",outputs_v2_topology\figures\thesis_rewrite\chapter_5\Figure_5B_10_SLG_B5_fault_restoration.png
+Figure_6_01,Healthy zones remaining de-energised after fault isolation,data,"restoration_results_v2.csv",outputs_v2_topology\figures\thesis_rewrite\chapter_6\Figure_6_01_scenario_comparison.png
+Figure_6_02,Computed performance summary of the proposed protection scheme,data,"rf_model_v2.mat + restoration_results_v2.csv",outputs_v2_topology\figures\thesis_rewrite\chapter_6\Figure_6_02_performance_summary.png

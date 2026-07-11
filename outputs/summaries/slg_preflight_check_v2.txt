@@ -1,0 +1,10 @@
+SLG GROUNDING PRE-FLIGHT (v2)
+Generated: 10-Jul-2026 08:08:41
+
+Zone   Healthy Ia (A)     SLG Ia (A)     Factor  Status
+B2              103.7         7750.6      74.7x  PASS
+B3              137.1         5737.5      41.9x  PASS
+B4              170.6         4647.7      27.2x  PASS
+B5              115.8         6761.2      58.4x  PASS
+
+Overall: ALL ZONES PASS
