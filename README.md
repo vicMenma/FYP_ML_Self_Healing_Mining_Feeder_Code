@@ -48,6 +48,11 @@ assumptions and ideal sensors — not field-validated performance. See the thesi
 limitations (NER-limited earth faults, discrete parameter grid, ideal sensors, no hardware/field
 validation).
 
+A cost-sensitivity ablation (`ABLATION_COST_SENSITIVITY.m`,
+`outputs/summaries/ablation_cost_sensitivity_v2.txt`) shows a **standard** Random Forest trained
+without the cost matrix gives the identical result (100 % accuracy, 0 missed faults) on this
+dataset — so the zero-missed-fault outcome reflects class separability, not the cost matrix.
+
 ---
 
 ## Repository structure
@@ -59,6 +64,7 @@ src/                                   MATLAB scripts and the Simulink model
   MASTER_B_TRAIN_AND_RESTORE.m         cost-sensitive RF training + closed-loop restoration
   MASTER_C_GENERATE_ALL_FIGURES.m      regenerates all thesis figures from stored outputs
   RUN_ALL_PIPELINE.m                   full pipeline with stage control + smoke test
+  ABLATION_COST_SENSITIVITY.m          RQ2 ablation: standard vs cost-sensitive RF (no re-sim)
 outputs/
   dataset/    fault_dataset_v2.{csv,xlsx,mat}   1000 samples x 24 features, 13 classes
   model/      rf_model_v2.mat + confusion/oob/cv/feature-importance mats
