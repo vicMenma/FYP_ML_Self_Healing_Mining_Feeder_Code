@@ -112,6 +112,15 @@ RUN_ALL_PIPELINE                   % smoke test / full pipeline with prompts
 The full thesis bibliography (IEEE style, 24 entries) is in
 [`docs/REFERENCES.md`](docs/REFERENCES.md).
 
+## AI assistance disclaimer
+
+This repository was prepared by the author with the assistance of **Claude Code** (Anthropic) for
+code implementation, refactoring, debugging, figure generation, and documentation. All engineering
+decisions — the feeder model, the classifier design, the protection and restoration logic, the
+interpretation of results, and the conclusions — are the author's own, consistent with the thesis
+Declaration of Originality. Claude Code is credited as a co-author on the corresponding commits as a
+matter of transparent attribution.
+
 ## License
 
 Released under the MIT License — see [LICENSE](LICENSE).
