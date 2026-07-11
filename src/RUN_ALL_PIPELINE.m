@@ -76,7 +76,7 @@ if exist(dsfile,'file')
     skipA = strcmp(r,'y');
 end
 if skipA
-    fprintf('\n[STEP 1/3] MASTER_A SKIPPED — existing dataset reused.\n');
+    fprintf('\n[STEP 1/4] MASTER_A SKIPPED — existing dataset reused.\n');
     % Refresh the CSV export from the reused .mat (no simulation needed) so it
     % always matches the current export format, incl. the scenario column.
     try
@@ -95,7 +95,7 @@ if skipA
         warning('CSV refresh failed (dataset itself unaffected): %s', ME.message);
     end
 else
-    fprintf('\n[STEP 1/3] MASTER_A — pre-flight + dataset\n');
+    fprintf('\n[STEP 1/4] MASTER_A — pre-flight + dataset\n');
     run('MASTER_A_PREFLIGHT_AND_DATASET.m');
 end
 
@@ -110,14 +110,37 @@ if bOK
     skipB = strcmp(r,'y');
 end
 if skipB
-    fprintf('\n[STEP 2/3] MASTER_B SKIPPED — existing model and restoration outputs reused.\n');
+    fprintf('\n[STEP 2/4] MASTER_B SKIPPED — existing model and restoration outputs reused.\n');
 else
-    fprintf('\n[STEP 2/3] MASTER_B — train + restore\n');
+    fprintf('\n[STEP 2/4] MASTER_B — train + restore\n');
     run('MASTER_B_TRAIN_AND_RESTORE.m');
 end
 
-fprintf('\n[STEP 3/3] MASTER_C — thesis figures\n');
+fprintf('\n[STEP 3/4] MASTER_C — thesis figures\n');
 run('MASTER_C_GENERATE_ALL_FIGURES.m');
+
+% ---- STEP 4: analysis & validation (ablation + robustness) ----------------
+% These run after the model exists. The ablation and noise tests reuse the
+% existing dataset/model and need NO new simulation (seconds). The off-grid
+% interpolation test DOES simulate ~72 new cases (~1-1.5 h) and is therefore
+% offered as an optional prompt so a routine pipeline run is not held up.
+fprintf('\n[STEP 4/4] Analysis & validation scripts\n');
+if exist(fullfile(OUT_ROOT,'rf_model_v2.mat'),'file')
+    fprintf('  - Cost-sensitivity ablation (RQ2, no re-simulation) ...\n');
+    try, run('ABLATION_COST_SENSITIVITY.m'); catch ME; warning('Ablation failed: %s', ME.message); end
+    fprintf('  - Measurement-noise robustness (no re-simulation) ...\n');
+    try, run('NOISE_ROBUSTNESS.m'); catch ME; warning('Noise test failed: %s', ME.message); end
+    ri = lower(strtrim(input(['  Run the off-grid INTERPOLATION test now? It simulates ~72 new\n' ...
+        '  cases (~1-1.5 h). [y = run / n = skip]: '],'s')));
+    if strcmp(ri,'y')
+        try, run('INTERPOLATION_TEST.m'); catch ME; warning('Interpolation test failed: %s', ME.message); end
+    else
+        fprintf('    Interpolation test skipped (run INTERPOLATION_TEST.m separately when ready).\n');
+    end
+else
+    fprintf('  Skipped — rf_model_v2.mat not found (run MASTER_B first).\n');
+end
+
 fprintf('\nFULL PIPELINE COMPLETE in %.1f min. Outputs in %s\n', toc(t0)/60, OUT_ROOT);
 
 %% =========================================================================
