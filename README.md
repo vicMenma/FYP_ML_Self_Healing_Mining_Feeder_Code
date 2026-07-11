@@ -99,6 +99,11 @@ MASTER_C_GENERATE_ALL_FIGURES      % regenerates the figures
 RUN_ALL_PIPELINE                   % smoke test / full pipeline with prompts
 ```
 
+## References
+
+The full thesis bibliography (IEEE style, 24 entries) is in
+[`docs/REFERENCES.md`](docs/REFERENCES.md).
+
 ## License
 
 Released under the MIT License — see [LICENSE](LICENSE).
