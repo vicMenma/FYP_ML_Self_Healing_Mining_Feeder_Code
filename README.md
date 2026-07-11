@@ -53,6 +53,12 @@ A cost-sensitivity ablation (`ABLATION_COST_SENSITIVITY.m`,
 without the cost matrix gives the identical result (100 % accuracy, 0 missed faults) on this
 dataset — so the zero-missed-fault outcome reflects class separability, not the cost matrix.
 
+Robustness checks (`outputs/summaries/`): under simulated measurement error the classifier
+degrades gracefully — mean accuracy 100 % → 94.6 % at a severe 10 % per-reading error, with **zero
+missed faults at every level**. An off-grid interpolation test (72 unseen Rf/LM/ton combinations)
+classified **72/72** correctly, so the class separation holds between the training-grid points
+(within the near-bolted range studied).
+
 ---
 
 ## Repository structure
@@ -65,6 +71,8 @@ src/                                   MATLAB scripts and the Simulink model
   MASTER_C_GENERATE_ALL_FIGURES.m      regenerates all thesis figures from stored outputs
   RUN_ALL_PIPELINE.m                   full pipeline with stage control + smoke test
   ABLATION_COST_SENSITIVITY.m          RQ2 ablation: standard vs cost-sensitive RF (no re-sim)
+  NOISE_ROBUSTNESS.m                   accuracy vs measurement noise on existing test set (no sim)
+  INTERPOLATION_TEST.m                 off-grid (unseen Rf/LM/ton) generalisation test
 outputs/
   dataset/    fault_dataset_v2.{csv,xlsx,mat}   1000 samples x 24 features, 13 classes
   model/      rf_model_v2.mat + confusion/oob/cv/feature-importance mats
