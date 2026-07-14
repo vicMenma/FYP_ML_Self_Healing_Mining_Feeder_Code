@@ -130,6 +130,8 @@ if exist(fullfile(OUT_ROOT,'rf_model_v2.mat'),'file')
     try, run('ABLATION_COST_SENSITIVITY.m'); catch ME; warning('Ablation failed: %s', ME.message); end
     fprintf('  - Measurement-noise robustness (no re-simulation) ...\n');
     try, run('NOISE_ROBUSTNESS.m'); catch ME; warning('Noise test failed: %s', ME.message); end
+    fprintf('  - Rule-based baseline vs Random Forest (no re-simulation) ...\n');
+    try, run('BASELINE_RULE_VS_RF.m'); catch ME; warning('Baseline test failed: %s', ME.message); end
     ri = lower(strtrim(input(['  Run the off-grid INTERPOLATION test now? It simulates ~72 new\n' ...
         '  cases (~1-1.5 h). [y = run / n = skip]: '],'s')));
     if strcmp(ri,'y')

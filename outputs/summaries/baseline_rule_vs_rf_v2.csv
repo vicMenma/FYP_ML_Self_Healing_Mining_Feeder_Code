@@ -1,0 +1,4 @@
+Method,ZoneAccuracy,FullClassAccuracy
+Max current-ratio rule,0.995,NaN
+Single decision tree,1,1
+Random Forest (this work),1,1

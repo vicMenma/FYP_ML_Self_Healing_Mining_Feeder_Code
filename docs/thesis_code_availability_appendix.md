@@ -32,6 +32,17 @@ the result summaries — is archived in a public GitHub repository:
 | 3 | `MASTER_C_GENERATE_ALL_FIGURES.m` | Regenerates the thesis figures from the stored outputs. |
 | — | `RUN_ALL_PIPELINE.m` | Runs the complete workflow with automated stage control and a smoke test. |
 
+## Analysis and validation scripts
+
+These reuse the existing dataset and trained model (no re-simulation, except the interpolation test) and reproduce the exact `rng(42)` held-out split.
+
+| Script | Purpose |
+|---|---|
+| `ABLATION_COST_SENSITIVITY.m` | Tests whether the 12.5× cost matrix changes the missed-fault outcome versus a standard Random Forest. |
+| `NOISE_ROBUSTNESS.m` | Evaluates classifier accuracy versus multiplicative measurement noise (Monte-Carlo). |
+| `INTERPOLATION_TEST.m` | Tests generalisation at off-grid fault resistances, load levels and onset times (this one simulates ~72 new cases). |
+| `BASELINE_RULE_VS_RF.m` | Compares the Random Forest with a max current-ratio zone rule and a single decision tree on the held-out test set, quantifying how much the learned model adds on this dataset. |
+
 ## Academic and safety notice
 
 This repository is an academic archive for a simulation-based Bachelor of Engineering thesis. It is
