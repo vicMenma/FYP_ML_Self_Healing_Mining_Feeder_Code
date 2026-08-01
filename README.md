@@ -9,7 +9,7 @@
 **Repository:** https://github.com/vicMenma/FYP_ML_Self_Healing_Mining_Feeder_Code
 **Thesis release:** [`v1.0-thesis-submission`](https://github.com/vicMenma/FYP_ML_Self_Healing_Mining_Feeder_Code/releases/tag/v1.0-thesis-submission)
 
-This repository is the code archive for the final year project (FYP) thesis of the same title. It contains the MATLAB/Simulink source code, the Simulink model, a lightweight copy of the dataset, the result summaries, and the 40 figures used in the thesis. It is published for **reproducibility** and to keep the printed thesis appendices to a reasonable length.
+This repository is the code archive for the final year project (FYP) thesis of the same title. It contains the MATLAB/Simulink source code, the Simulink model, a lightweight copy of the dataset, the result summaries, and the 30 figures used in the final thesis. It is published for **reproducibility** and to keep the printed thesis appendices to a reasonable length.
 
 ---
 
@@ -55,10 +55,10 @@ FYP_ML_Self_Healing_Mining_Feeder_Code/
 │   │   ├── restoration_results_full.csv
 │   │   └── pipeline_full_log.txt
 │   └── figures/
-│       └── thesis_final_named/                 % the 40 thesis figures, named by official caption
-│           ├── chapter_3/                       %   Figure 3.1 – 3.12
-│           ├── chapter_4/                       %   Figure 4.1 – 4.11
-│           ├── chapter_5/                       %   Figure 5.1 – 5.14
+│       └── thesis_final_named/                 % the 30 final thesis figures, named by official caption
+│           ├── chapter_3/                       %   Figure 3.1 – 3.7
+│           ├── chapter_4/                       %   Figure 4.1 – 4.5
+│           ├── chapter_5/                       %   Figure 5.1 – 5.15
 │           └── chapter_6/                       %   Figure 6.1 – 6.3
 └── docs/
     ├── thesis_code_availability_appendix.md    % short appendix text for the thesis
@@ -72,7 +72,7 @@ FYP_ML_Self_Healing_Mining_Feeder_Code/
 - **MATLAB scripts and the Simulink model** are in `src/`. The model is `src/mining_feeder_layer_FINAL_baseline.slx`.
 - **The lightweight dataset** is `outputs/dataset/fault_dataset_1000.csv` (~0.4 MB) — included so the data can be inspected without re-running the ~20-hour simulation.
 - **Result summaries** are in `outputs/summaries/` (classifier metrics, restoration results, run log).
-- **The thesis figures** are in `outputs/figures/thesis_final_named/`, grouped by chapter. These are the **40 figures used in the thesis**, each named according to its official thesis caption — for example `chapter_3/Figure_3_01_research_methodology_workflow.png` and `chapter_5/Figure_5_14_post_restoration_voltage_comparison.png`. The figure-number → caption → filename mapping is listed in [`docs/thesis_final_figure_filename_map.md`](docs/thesis_final_figure_filename_map.md).
+- **The thesis figures** are in `outputs/figures/thesis_final_named/`, grouped by chapter. These are the **30 figures used in the final thesis**, extracted from `Chimundu_VCC_BEng_Thesis_FINAL.docx` and named according to their official captions — for example `chapter_3/Figure_3_01_research_methodology_workflow.png` and `chapter_5/Figure_5_15_autonomous_fdir_operation_single_continuous_simulation.png`. The figure-number → caption → filename mapping is listed in [`docs/thesis_final_figure_filename_map.md`](docs/thesis_final_figure_filename_map.md).
 
 Large generated artefacts (the trained model `rf_model_final.mat`, the binary dataset files `fault_dataset_1000.mat`/`.xlsx`, simulation checkpoints, and `matlab.mat`) are intentionally **not** committed — they are fully regenerable by running the scripts and are excluded by `.gitignore`.
 
@@ -113,7 +113,7 @@ Generates the thesis figures (Chapters 3–6) at print resolution (300 DPI) from
 A launcher that runs A → B → C in sequence with skip logic and writes a combined run log (`pipeline_full_log.txt`).
 
 **`gen_fig5_14.m`**
-A small helper that reads `restoration_results_full.csv` and produces the post-restoration voltage figure (Figure 5.14).
+A small helper that reads `restoration_results_full.csv` and produces the post-restoration voltage figure (Figure 5.13 in the final thesis; the script retains its original filename).
 
 ---
 
