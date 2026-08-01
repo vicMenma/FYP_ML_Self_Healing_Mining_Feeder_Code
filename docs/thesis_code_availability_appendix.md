@@ -21,6 +21,7 @@ the result summaries — is archived in a public GitHub repository:
 | `outputs/model/` | The trained Random Forest (`rf_model_v2.mat`) and the confusion, OOB, cross-validation and feature-importance data. |
 | `outputs/waveforms/` | Twelve live-simulation fault-and-restoration captures (`wave_{SLG,LL,3PH}_B{2..5}.mat`). |
 | `outputs/figures/` | The final thesis figures, organised by chapter, plus `figure_manifest.csv`. |
+| `outputs/figures/thesis_final_named/` | The 30 numbered figures extracted from `Chimundu_VCC_BEng_Thesis_FINAL.docx`, named according to their official captions. |
 | `outputs/summaries/` | Block discovery, SLG grounding pre-flight, RF metrics, restoration summary and results, and the pipeline log. |
 
 ## Script execution order
