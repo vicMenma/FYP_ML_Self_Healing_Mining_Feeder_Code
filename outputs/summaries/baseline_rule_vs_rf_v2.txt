@@ -1,0 +1,17 @@
+RULE-BASED BASELINE vs RANDOM FOREST
+Generated: 14-Jul-2026 05:13:25
+
+Held-out test set: 200 samples (180 fault, 20 healthy). Same split as MASTER_B (rng 42).
+
+Method                          Zone accuracy    Full 13-class Interpretability
+------------------------------------------------------------------------------
+Max current-ratio rule                 99.50% n/a (magnitude)   High (one threshold)
+Single decision tree                  100.00%         100.00%   High (12 splits)
+Random Forest (this work)             100.00%         100.00%   Moderate (500 trees)
+
+INTERPRETATION: on this highly separable dataset the zone localisation that
+drives the switching action is achievable with a trivial current-ratio rule,
+and the full 13-class classification with a single decision tree; the Random
+Forest is not strictly necessary here. Its ensemble robustness (graceful noise
+degradation, off-grid generalisation) would become material only for the harder,
+less separable regimes (NER-limited earth faults, noisy/missing measurements).

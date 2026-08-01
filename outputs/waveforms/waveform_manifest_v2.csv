@@ -1,0 +1,13 @@
+Case,Zone,FaultType,RestorationStatus,DataFile
+SLG-B2,B2,SLG,RESTORED,outputs_v2_topology\waveforms_v2\wave_SLG_B2.mat
+LL-B2,B2,LL,RESTORED,outputs_v2_topology\waveforms_v2\wave_LL_B2.mat
+3PH-B2,B2,3PH,RESTORED,outputs_v2_topology\waveforms_v2\wave_3PH_B2.mat
+SLG-B3,B3,SLG,RESTORED,outputs_v2_topology\waveforms_v2\wave_SLG_B3.mat
+LL-B3,B3,LL,RESTORED,outputs_v2_topology\waveforms_v2\wave_LL_B3.mat
+3PH-B3,B3,3PH,RESTORED,outputs_v2_topology\waveforms_v2\wave_3PH_B3.mat
+SLG-B4,B4,SLG,ISOLATED_NO_TIE,outputs_v2_topology\waveforms_v2\wave_SLG_B4.mat
+LL-B4,B4,LL,ISOLATED_NO_TIE,outputs_v2_topology\waveforms_v2\wave_LL_B4.mat
+3PH-B4,B4,3PH,ISOLATED_NO_TIE,outputs_v2_topology\waveforms_v2\wave_3PH_B4.mat
+SLG-B5,B5,SLG,ISOLATED_NO_TIE,outputs_v2_topology\waveforms_v2\wave_SLG_B5.mat
+LL-B5,B5,LL,ISOLATED_NO_TIE,outputs_v2_topology\waveforms_v2\wave_LL_B5.mat
+3PH-B5,B5,3PH,ISOLATED_NO_TIE,outputs_v2_topology\waveforms_v2\wave_3PH_B5.mat

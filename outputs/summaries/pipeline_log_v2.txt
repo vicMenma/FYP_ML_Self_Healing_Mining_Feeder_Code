@@ -1,0 +1,38 @@
+[2026-07-11 07:33:16] MASTER_B (v2) started 11-Jul-2026 07:33:16
+[2026-07-11 07:33:16] Dataset gate PASSED: 1000 samples, 24 features, 13 classes.
+[2026-07-11 07:34:03] RF training done in 45.9 s. (Training on 800x24 samples IS genuinely fast;
+[2026-07-11 07:34:03]    the slow, provable part of MASTER_B is the restoration simulations below.)
+[2026-07-11 07:34:33] Five-fold CV done in 24.6 s.
+[2026-07-11 07:34:36] RF trained. Test accuracy = 1.0000. 5-fold CV mean = 1.0000.
+[2026-07-11 07:34:36] Running zone isolation + restoration scenarios ...
+[2026-07-11 07:34:38] T2 rating read from model : 15.00 MVA (capacity check).
+[2026-07-11 07:34:38] Voltage base read from T1 : 11000 V line-to-line (pu conversion).
+[2026-07-11 07:34:38] Restoration suite: 12 scenarios x up to 2 sims each (expect ~24 Simulink runs).
+[2026-07-11 07:39:33]   B2 LM=0.70 -> pred=B2(YES) RESTORED             tie=CLOSED isolated=B2 tieRestored=[B3+B4] onT1=[]  (294.3 s)
+[2026-07-11 07:43:47]   B2 LM=1.00 -> pred=B2(YES) RESTORED             tie=CLOSED isolated=B2 tieRestored=[B3+B4] onT1=[]  (254.4 s)
+[2026-07-11 07:47:38]   B2 LM=1.30 -> pred=B2(YES) RESTORED             tie=CLOSED isolated=B2 tieRestored=[B3+B4] onT1=[]  (230.9 s)
+[2026-07-11 07:50:17]   B3 LM=0.70 -> pred=B3(YES) RESTORED             tie=CLOSED isolated=B3 tieRestored=[B4] onT1=[B2]  (158.5 s)
+[2026-07-11 07:52:48]   B3 LM=1.00 -> pred=B3(YES) RESTORED             tie=CLOSED isolated=B3 tieRestored=[B4] onT1=[B2]  (151.6 s)
+[2026-07-11 07:55:33]   B3 LM=1.30 -> pred=B3(YES) RESTORED             tie=CLOSED isolated=B3 tieRestored=[B4] onT1=[B2]  (165.2 s)
+[2026-07-11 07:57:58]   B4 LM=0.70 -> pred=B4(YES) ISOLATED_NO_TIE      tie=OPEN isolated=B4 tieRestored=[] onT1=[B2+B3]  (144.9 s)
+[2026-07-11 08:00:24]   B4 LM=1.00 -> pred=B4(YES) ISOLATED_NO_TIE      tie=OPEN isolated=B4 tieRestored=[] onT1=[B2+B3]  (146.0 s)
+[2026-07-11 08:03:14]   B4 LM=1.30 -> pred=B4(YES) ISOLATED_NO_TIE      tie=OPEN isolated=B4 tieRestored=[] onT1=[B2+B3]  (169.7 s)
+[2026-07-11 08:06:26]   B5 LM=0.70 -> pred=B5(YES) ISOLATED_NO_TIE      tie=OPEN isolated=B5 tieRestored=[] onT1=[B2+B3+B4]  (192.3 s)
+[2026-07-11 08:09:06]   B5 LM=1.00 -> pred=B5(YES) ISOLATED_NO_TIE      tie=OPEN isolated=B5 tieRestored=[] onT1=[B2+B3+B4]  (159.4 s)
+[2026-07-11 08:11:24]   B5 LM=1.30 -> pred=B5(YES) ISOLATED_NO_TIE      tie=OPEN isolated=B5 tieRestored=[] onT1=[B2+B3+B4]  (138.0 s)
+[2026-07-11 08:11:33] Capturing severe-case fault + restoration waveform DATA (12 cases; figures rendered by MASTER_C) ...
+[2026-07-11 08:14:13]   waveform SLG-B2 -> RESTORED               (live-sim data saved)
+[2026-07-11 08:17:21]   waveform LL -B2 -> RESTORED               (live-sim data saved)
+[2026-07-11 08:21:21]   waveform 3PH-B2 -> RESTORED               (live-sim data saved)
+[2026-07-11 08:24:17]   waveform SLG-B3 -> RESTORED               (live-sim data saved)
+[2026-07-11 08:27:38]   waveform LL -B3 -> RESTORED               (live-sim data saved)
+[2026-07-11 08:30:11]   waveform 3PH-B3 -> RESTORED               (live-sim data saved)
+[2026-07-11 08:33:59]   waveform SLG-B4 -> ISOLATED_NO_TIE        (live-sim data saved)
+[2026-07-11 08:37:49]   waveform LL -B4 -> ISOLATED_NO_TIE        (live-sim data saved)
+[2026-07-11 08:40:57]   waveform 3PH-B4 -> ISOLATED_NO_TIE        (live-sim data saved)
+[2026-07-11 08:43:51]   waveform SLG-B5 -> ISOLATED_NO_TIE        (live-sim data saved)
+[2026-07-11 08:46:12]   waveform LL -B5 -> ISOLATED_NO_TIE        (live-sim data saved)
+[2026-07-11 08:48:41]   waveform 3PH-B5 -> ISOLATED_NO_TIE        (live-sim data saved)
+[2026-07-11 08:48:43] Severe-case waveform data captured: 12/12 (MASTER_C renders the figures).
+[2026-07-11 08:48:43] PROOF OF WORK: 48 Simulink runs, 72.8 min total simulation wall time.
+[2026-07-11 08:48:43] MASTER_B (v2) complete 11-Jul-2026 08:48:43

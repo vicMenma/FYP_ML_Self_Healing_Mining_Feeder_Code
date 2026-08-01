@@ -1,0 +1,11 @@
+RESEARCH-QUESTION-2 ABLATION — cost sensitivity
+Generated: 11-Jul-2026 16:08:11
+
+Test set: 200 samples (180 fault, 20 healthy). Same split as MASTER_B (rng 42).
+
+Configuration                  Accuracy  Fault recall Missed faults  False alarms
+---------------------------------------------------------------------------------
+Standard RF (no cost)           100.00%          100%             0             0
+Cost-sensitive RF (12.5x)       100.00%          100%             0             0
+
+INTERPRETATION: both models produce 0 missed faults, so on this dataset the cost matrix does not change the missed-fault outcome. The zero-missed-fault result reflects the high separability of the corrected near-bolted classes; the cost matrix is a safety-oriented design choice whose effect would only become material for a harder (e.g. NER-limited) problem.

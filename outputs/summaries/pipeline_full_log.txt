@@ -1,7 +1,0 @@
-[2026-04-28 13:45:19]  Pipeline started
-[2026-04-28 13:45:19]  Working directory: C:\Users\victo\Desktop\Thesis - ML-Assisted Self-Healing of a Mining Distribution Feeder with Selective Fault Isolation\Project matlab\scripts
-[2026-04-28 13:45:28]  Step 1 SKIPPED — existing dataset reused
-[2026-04-28 13:45:36]  Step 2 SKIPPED — existing model reused
-[2026-04-28 13:45:36]  Step 3 START
-[2026-04-28 13:46:55]  Step 3 DONE — 0h 1m 18s
-[2026-04-28 13:46:55]  Pipeline complete

@@ -1,0 +1,14 @@
+MEASUREMENT-NOISE ROBUSTNESS
+Generated: 11-Jul-2026 17:45:40
+
+Held-out test set: 200 samples (180 fault). 100 Monte-Carlo reps per level.
+Noise: multiplicative per-reading Gaussian, sigma = stated %% of each RMS reading.
+
+Error (%)          Mean acc    Worst acc   Fault recall  Missed faults
+----------------------------------------------------------------------
+0.0                 100.00%      100.00%         100.0%           0.00
+0.5                 100.00%      100.00%         100.0%           0.00
+1.0                  99.97%       99.50%         100.0%           0.00
+2.0                  99.84%       98.50%         100.0%           0.00
+5.0                  97.99%       95.00%         100.0%           0.00
+10.0                 94.56%       91.00%         100.0%           0.00

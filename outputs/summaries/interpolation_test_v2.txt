@@ -1,0 +1,17 @@
+INTERPOLATION (OFF-GRID) GENERALISATION TEST
+Generated: 11-Jul-2026 18:52:04
+
+Off-grid cases : 72  (Rf=[0.05 0.3 2.5] ohm, LM=[0.78 1.2] pu, ton=0.625 s)
+These fault resistances, load multipliers and onset time lie strictly BETWEEN the
+training-grid points; the model has not seen them. Predictions use rf_model_v2.mat.
+
+Exact-class accuracy (type + location) : 100.00 %  (72/72)
+Zone-localisation accuracy            : 100.00 %  (72/72)
+Missed faults (fault predicted Healthy): 0
+
+Per-fault-type exact accuracy:
+   SLG : 100.00 %  (24/24)
+   LL  : 100.00 %  (24/24)
+   3PH : 100.00 %  (24/24)
+
+Total simulation wall time: 64.5 min.

@@ -1,1120 +1,1286 @@
 %% =========================================================================
-%  MASTER_C_GENERATE_ALL_FIGURES.m
+%  MASTER_C_GENERATE_ALL_FIGURES.m   (v4 — final thesis-ready generator, Chapters 4-6 only)
 %  ─────────────────────────────────────────────────────────────────────────
 %  Thesis: ML-Assisted Self-Healing of a 33/11 kV Mining Distribution Feeder
 %  Author: Victoire Chinyanta Chimundu — CU-BEE-100-7229  |  Supervisor: Mr Charles Kasonde
 %
-%  PURPOSE
-%  -------
-%  Run this AFTER MASTER_A and MASTER_B complete.
-%  Generates ALL thesis figures in one pass:
+%  Generates the thesis figures for Chapters 4-6 (Chapter 3 figure generation disabled):
+%    - Simulink model canvas (print -s of the real model)
+%    - Block "parameter dialog" summaries recreated cleanly from get_param
+%    - Scope-style V/I waveforms at every measurement point (source, T1, T2, B2..B5)
+%    - Thesis-ready fault signatures, ML results, and restoration figures
+%    - Revised Chapter 6 comparison and performance-summary figures
+%    - The 12 severe fault+restoration waveforms rendered from MASTER_B's live data
+%  Every figure is wrapped in a safe call so one failure cannot abort the run,
+%  and a manifest (figure_manifest.csv) is always written.
 %
-%    figures/ch3_methodology/    — 8 figures
-%    figures/ch4_system_design/  — 4 figures
-%    figures/ch5_results/        — 14 figures
-%    figures/ch6_conclusions/    — 3 figures
-%    (Total: 29 figures at 300 DPI)
-%
-%  REQUIRES
-%  --------
-%    fault_dataset_1000.mat  (from MASTER_A)
-%    rf_model_final.mat      (from MASTER_B)
-%    restoration_summary.txt (from MASTER_B)
-%
-%  FONT SIZES — thesis-correct values
-%  -----------
-%    Title  : 11 pt  (was 6 pt in original — too small for print)
-%    Labels : 10 pt
-%    Ticks  :  9 pt
-%    Annot  :  8 pt
-%    Legend :  9 pt
-%
-%  The original GENERATE_ALL_FIGURES.m used FS_TITLE=6 / FS_LABEL=5 /
-%  FS_TICK=5 / FS_ANNOT=5 which produced text invisible at normal zoom.
-%  All sizes have been corrected to print-legible values.
+%  Output tree: outputs_v2_topology/figures/thesis_rewrite/chapter_4|5|6/
+%  Note: Chapter 3 and the future-work roadmap are intentionally not generated.
 % =========================================================================
 
 clc; close all;
-rng(42);
+MODEL   = 'mining_feeder_layer_FINAL_baseline';
+OUT_ROOT = fullfile(pwd,'outputs_v2_topology');
+FIGROOT  = fullfile(OUT_ROOT,'figures','thesis_rewrite');
+CH = struct('c4',fullfile(FIGROOT,'chapter_4'), ...
+            'c5',fullfile(FIGROOT,'chapter_5'),'c6',fullfile(FIGROOT,'chapter_6'));
+fn=fieldnames(CH); for i=1:numel(fn); if ~exist(CH.(fn{i}),'dir'); mkdir(CH.(fn{i})); end; end
+MAN = {};
 
-fprintf('=================================================================\n');
-fprintf('  MASTER C — GENERATE ALL THESIS FIGURES\n');
-fprintf('  %s\n', datestr(now));
-fprintf('=================================================================\n\n');
+load_system(MODEL);
+BL = discover_blocks(MODEL);
 
-%% ── Output folders ────────────────────────────────────────────────────────
-DIRS = {'figures','figures/ch3_methodology','figures/ch4_system_design', ...
-        'figures/ch5_results','figures/ch6_conclusions','figures/dataset', ...
-        'figures/reports'};
-for d = DIRS
-    if ~exist(d{1},'dir'); mkdir(d{1}); end
+% measurement points: label, chapter-dir, V-signal candidates, I-signal candidates
+PTS = { ...
+ '33kV Source', CH.c4, {'RMS_V_33KV_Source'}, {'RMS_I_33KV_Source'}, 'source'; ...
+ 'T1 11kV',     CH.c4, {'RMS_V_T1'},          {'RMS_I_T1'},          'T1'; ...
+ 'T2 11kV',     CH.c4, {'RMS_V_T2'},          {'RMS_I_T2'},          'T2'; ...
+ 'Bus B2',      CH.c4, {'RMS_V_B2'},          {'RMS_I_B2'},          'B2'; ...
+ 'Bus B3',      CH.c4, {'RMS_V_B3'},          {'RMS_I_B3'},          'B3'; ...
+ 'Bus B4',      CH.c4, {'RMS_V_B4'},          {'RMS_I_B4'},          'B4'; ...
+ 'Bus B5',      CH.c4, {'RMS_V_B5','RMS_V_SXEW'}, {'RMS_I_B5','RMS_I_SXEW'}, 'B5'};
+
+%% ================================================== CH3: TOPOLOGY ========
+% Chapter 3 topology figures are intentionally NOT generated in this version.
+% The previously prepared topology / SLD / protection-zone graphics are kept
+% for manual use, but MASTER_C now starts automated generation from Chapter 4.
+
+%% ================================================== CH4: MODEL CANVAS =======
+fout=fullfile(CH.c4,'Figure_4_01_full_simulink_model.png');
+if safefig(fout,@(f) print(['-s' MODEL],'-dpng','-r150',f))
+    MAN=addrow(MAN,'Figure_4_01','Full Simulink model of the sectionalised feeder','simulink_screenshot',MODEL,relp(fout));
 end
 
-%% ── Global style (thesis-quality) ────────────────────────────────────────
-FN      = 'Arial';         % font name
-FS_T    = 11;              % title font size  (was 6 — now print-legible)
-FS_L    = 10;              % axis label size  (was 5)
-FS_K    = 9;               % tick label size  (was 5)
-FS_A    = 8;               % annotation size  (was 5)
-FS_G    = 9;               % legend size      (was 5)
-
-set(0,'DefaultAxesFontName',  FN, 'DefaultAxesFontSize',   FS_K);
-set(0,'DefaultTextFontName',  FN, 'DefaultTextFontSize',   FS_A);
-set(0,'DefaultLegendFontName',FN, 'DefaultLegendFontSize', FS_G);
-set(0,'DefaultLineLineWidth', 1.2);
-set(0,'DefaultFigureColor',   'w');
-set(0,'DefaultAxesBox',       'on');
-set(0,'DefaultAxesGridLineStyle',':');
-
-FIG_W  = 800;  FIG_H  = 480;  FIG_SQ = 560;
-
-%% ── Colour palette ────────────────────────────────────────────────────────
-C_HEALTHY = [0.18 0.63 0.18];
-C_B2      = [0.84 0.19 0.15];
-C_B3      = [0.12 0.47 0.71];
-C_B4      = [0.89 0.55 0.00];
-C_B5      = [0.58 0.10 0.62];
-COLORS_13 = [C_HEALTHY; C_B2;C_B2;C_B2; C_B3;C_B3;C_B3; C_B4;C_B4;C_B4; C_B5;C_B5;C_B5];
-CLASS_NAMES = {'Healthy','SLG-B2','LL-B2','3PH-B2','SLG-B3','LL-B3','3PH-B3', ...
-               'SLG-B4','LL-B4','3PH-B4','SLG-B5','LL-B5','3PH-B5'};
-SHORT = {'H','SLG-B2','LL-B2','3PH-B2','SLG-B3','LL-B3','3PH-B3', ...
-         'SLG-B4','LL-B4','3PH-B4','SLG-B5','LL-B5','3PH-B5'};
-
-%% ── Load data ─────────────────────────────────────────────────────────────
-HAS_DATASET = false;  HAS_RF = false;  HAS_RESTORE = false;
-
-if exist('fault_dataset_1000.mat','file')
-    S = load('fault_dataset_1000.mat');
-    if isfield(S,'dataset')
-        dataset       = S.dataset;
-        feature_names = S.feature_names;
-        if isfield(S,'CLASS_NAMES'); CLASS_NAMES = S.CLASS_NAMES; end
-        X      = dataset(:,1:end-1);
-        labels = dataset(:,end);
-        HAS_DATASET = true;
-        fprintf('[DATA] Dataset: %d samples, %d features\n', size(dataset,1), size(X,2));
+%% ================================================== CH4: PARAMETER TABLES ===
+grp = { ...
+ 'Figure_4_02','Source parameters',            @() param_rows(MODEL,{{namef(MODEL,'33KV_Source'),{}}}); ...
+ 'Figure_4_03','Transformer T1 parameters',    @() param_rows(MODEL,{{namef(MODEL,'T1'),{}}}); ...
+ 'Figure_4_04','Transformer T2 parameters',    @() param_rows(MODEL,{{namef(MODEL,'T2'),{}}}); ...
+ 'Figure_4_05','Section breaker parameters',   @() breaker_rows(BL,{'CB_MAIN','CB_BUS1_B3','CB_BUS1_B4','CB_T2_BUS5'}); ...
+ 'Figure_4_06','Tie-switch parameters',        @() breaker_rows(BL,{'TIE'}); ...
+ 'Figure_4_07','Load parameters (DL_B2..B5)',  @() load_rows(BL); ...
+ 'Figure_4_08','Fault block parameters',       @() fault_rows(BL); ...
+ 'Figure_4_09','Line (PI section) parameters', @() line_rows(MODEL); ...
+ 'Figure_4_10','RMS measurement configuration',@() rms_rows(MODEL); ...
+ 'Figure_4_11','Solver / model configuration', @() solver_rows(MODEL) };
+for i=1:size(grp,1)
+    fout=fullfile(CH.c4,[grp{i,1} '_' slug(grp{i,2}) '.png']);
+    rows = safeeval(grp{i,3});
+    if ~isempty(rows) && safefig(fout,@(f) table_figure(grp{i,2},rows,f))
+        MAN=addrow(MAN,grp{i,1},grp{i,2},'get_param_table','(model blocks)',relp(fout));
     end
 end
 
-R = struct();   % will hold all RF metrics
-if exist('rf_model_final.mat','file')
-    M = load('rf_model_final.mat');
-    % Fields saved by MASTER_B: rf_model, X_train, y_train, X_test, y_test,
-    %                           feature_names, CLASS_NAMES, per_cls, cv_acc, oob_err
-    R.rf_model   = M.rf_model;
-    R.X_test     = M.X_test;
-    R.y_test     = M.y_test;
-    R.per_cls    = M.per_cls;    % [prec, recall, f1, n_test] per class
-    R.cv_acc     = M.cv_acc;
-    R.oob_err    = M.oob_err;
-    R.feature_names = M.feature_names;
-    if isfield(M,'CLASS_NAMES'); CLASS_NAMES = M.CLASS_NAMES; end
+%% ================================================== CH4: HEALTHY WAVEFORMS ==
+set_normal_state(BL); clear_all_faults(BL); set_loads(BL,1.0);
+sH = simrun(MODEL);
+for i=1:size(PTS,1)
+    fout=fullfile(PTS{i,2}, sprintf('Figure_4_1%d_healthy_%s_VI.png', i+1, PTS{i,5}));
+    if safefig(fout, @(f) scope_fig(sH, PTS{i,3}, PTS{i,4}, PTS{i,1}, 'Healthy', f))
+        MAN=addrow(MAN, sprintf('Figure_4_1%d',i+1), ...
+            sprintf('Healthy RMS voltage & current — %s', PTS{i,1}), ...
+            'logged_signal', strjoin([PTS{i,3} PTS{i,4}],','), relp(fout));
+    end
+end
 
-    %% Recompute derived quantities that MASTER_B does not save:
-    [y_pred_cell, scores] = predict(R.rf_model, R.X_test);
-    R.y_pred    = str2double(y_pred_cell);
-    R.scores    = scores;
-    R.acc       = mean(R.y_pred == R.y_test);
-    R.cv_mean   = mean(R.cv_acc);
-    R.cv_std    = std(R.cv_acc);
-    R.macro_f1  = mean(R.per_cls(:,3));
+%% ================================================== CH5: FAULT SIGNATURES ===
+dfile = fullfile(OUT_ROOT,'fault_dataset_v2.mat');
+if exist(dfile,'file')
+    fout=fullfile(CH.c5,'Figure_5_08_voltage_sag_by_class.png');
+    if safefig(fout,@(f) signature_fig(dfile,'V',f))
+        MAN=addrow(MAN,'Figure_5_08','Per-class voltage signature (RMS)','data','fault_dataset_v2.mat',relp(fout)); end
+    fout=fullfile(CH.c5,'Figure_5_09_current_rise_by_class.png');
+    if safefig(fout,@(f) signature_fig(dfile,'I',f))
+        MAN=addrow(MAN,'Figure_5_09','Per-class current signature (RMS)','data','fault_dataset_v2.mat',relp(fout)); end
+end
 
-    % Confusion matrix
-    R.cm = confusionmat(R.y_test, R.y_pred);
+%% ================================================== CH5: ML FIGURES =========
+if exist(fullfile(OUT_ROOT,'confusion_v2.mat'),'file')
+    Sc=load(fullfile(OUT_ROOT,'confusion_v2.mat'));
+    fout=fullfile(CH.c5,'Figure_5_01_confusion_matrix.png');
+    if safefig(fout,@(f) plot_confusion(Sc.Cm,Sc.CLASS_NAMES,f)); MAN=addrow(MAN,'Figure_5_01','Test-set confusion matrix','data','confusion_v2.mat',relp(fout)); end
+    fout=fullfile(CH.c5,'Figure_5_02_per_class_metrics.png');
+    if safefig(fout,@(f) plot_prf_from_cm(Sc.Cm,Sc.CLASS_NAMES,f)); MAN=addrow(MAN,'Figure_5_02','Per-class precision/recall/F1','data','confusion_v2.mat',relp(fout)); end
+end
+if exist(fullfile(OUT_ROOT,'feature_importance_v2.mat'),'file')
+    Si=load(fullfile(OUT_ROOT,'feature_importance_v2.mat'));
+    fout=fullfile(CH.c5,'Figure_5_03_feature_importance.png');
+    if safefig(fout,@(f) plot_importance(Si.imp,Si.featNames,f)); MAN=addrow(MAN,'Figure_5_03','OOB permutation feature importance','data','feature_importance_v2.mat',relp(fout)); end
+end
+if exist(fullfile(OUT_ROOT,'oob_error_curve_v2.mat'),'file')
+    So=load(fullfile(OUT_ROOT,'oob_error_curve_v2.mat'));
+    fout=fullfile(CH.c5,'Figure_5_06_oob_error_curve.png');
+    if safefig(fout,@(f) plot_curve(So.oobErr,'Number of trees','OOB error','Random Forest OOB error convergence',f)); MAN=addrow(MAN,'Figure_5_06','Random Forest OOB error convergence','data','oob_error_curve_v2.mat',relp(fout)); end
+end
+if exist(fullfile(OUT_ROOT,'cv_accuracy_v2.mat'),'file')
+    Sv=load(fullfile(OUT_ROOT,'cv_accuracy_v2.mat'));
+    fout=fullfile(CH.c5,'Figure_5_07_cv_accuracy.png');
+    if safefig(fout,@(f) plot_cv(Sv.cvACC,f)); MAN=addrow(MAN,'Figure_5_07','Five-fold cross-validation accuracy','data','cv_accuracy_v2.mat',relp(fout)); end
+end
 
-    % Fault / healthy detection rates
-    fault_mask    = (R.y_test > 0);
-    R.fault_det   = mean(R.y_pred(fault_mask)  > 0);
-    R.healthy_det = mean(R.y_pred(~fault_mask) == 0);
+%% ================================================== CH5: RESTORATION ========
+rcsv=fullfile(OUT_ROOT,'restoration_results_v2.csv');
+if exist(rcsv,'file')
+    Rt=readtable(rcsv);
+    fout=fullfile(CH.c5,'Figure_5_04_restoration_decision_summary.png');
+    if safefig(fout,@(f) plot_restoration_summary(Rt,f))
+        MAN=addrow(MAN,'Figure_5_04','Restoration decision outcomes by status','data','restoration_results_v2.csv',relp(fout)); end
+    fout=fullfile(CH.c5,'Figure_5_05_post_restoration_voltage_comparison.png');
+    if safefig(fout,@(f) plot_post_restoration_v(Rt,f))
+        MAN=addrow(MAN,'Figure_5_05','Post-restoration voltage (eligible RESTORED cases)','data','restoration_results_v2.csv',relp(fout)); end
+end
 
-    % Feature importance from OOB
-    R.imp = R.rf_model.OOBPermutedPredictorDeltaError;
+%% ============================ CH5: SEVERE FAULT+RESTORATION WAVEFORMS (12) ==
+% MASTER_B captured these during its LIVE restoration simulations; we only render.
+WAVE=fullfile(OUT_ROOT,'waveforms_v2'); wf=dir(fullfile(WAVE,'wave_*.mat'));
+if isempty(wf)
+    warning('No waveform data in %s. Run MASTER_B first to capture the 12 severe cases.',WAVE);
+end
+for i=1:numel(wf)
+    W=load(fullfile(WAVE,wf(i).name));
+    fout=fullfile(CH.c5,sprintf('Figure_5B_%02d_%s_%s_fault_restoration.png',W.nfig,W.ftype,W.zone));
+    if safefig(fout,@(f) plot_fault_restoration(W,f))
+        MAN=addrow(MAN,sprintf('Figure_5B_%02d',W.nfig), ...
+            sprintf('%s fault at %s — fault & restoration waveform',W.ftype,W.zone), ...
+            'logged_signal (MASTER_B live sim)',wf(i).name,relp(fout));
+    end
+end
 
-    % Wilson CI
-    n   = numel(R.y_test);  z = 1.96;
-    acc = R.acc;
-    R.w_lo = (acc+z^2/(2*n) - z*sqrt(acc*(1-acc)/n+z^2/(4*n^2)))/(1+z^2/n);
-    R.w_hi = (acc+z^2/(2*n) + z*sqrt(acc*(1-acc)/n+z^2/(4*n^2)))/(1+z^2/n);
+%% ================================================== CH6: CONCLUSIONS ========
+fout=fullfile(CH.c6,'Figure_6_01_scenario_comparison.png');
+if safefig(fout,@(f) draw_scenarios(OUT_ROOT,f))
+    MAN=addrow(MAN,'Figure_6_01', ...
+        'Healthy zones remaining de-energised after fault isolation', ...
+        'data','restoration_results_v2.csv',relp(fout));
+end
 
-    % Bootstrap F1 CIs (1000 iter)
-    n_cls  = 13;  N_BOOT = 1000;  rng(42);
-    boot_f1 = zeros(N_BOOT, n_cls);
-    for b = 1:N_BOOT
-        idx_b  = randsample(n,n,true);
-        yt_b   = R.y_test(idx_b);
-        yp_b   = R.y_pred(idx_b);
-        for c = 0:12
-            tp_=sum((yt_b==c)&(yp_b==c)); fp_=sum((yt_b~=c)&(yp_b==c)); nc_=sum(yt_b==c);
-            pr_=tp_/max(tp_+fp_,1); re_=tp_/max(nc_,1);
-            boot_f1(b,c+1)=2*pr_*re_/max(pr_+re_,1e-9);
+fout=fullfile(CH.c6,'Figure_6_02_performance_summary.png');
+if safefig(fout,@(f) draw_performance(OUT_ROOT,f))
+    MAN=addrow(MAN,'Figure_6_02', ...
+        'Computed performance summary of the proposed protection scheme', ...
+        'data','rf_model_v2.mat + restoration_results_v2.csv',relp(fout));
+end
+
+% Figure 6.03 (future-work roadmap) is intentionally disabled. Remove any
+% stale copy from an earlier MASTER_C run so it cannot be mistaken for a
+% newly generated thesis figure.
+oldRoadmaps=dir(fullfile(CH.c6,'Figure_6_03_future_work_roadmap*.png'));
+for k=1:numel(oldRoadmaps)
+    delete(fullfile(oldRoadmaps(k).folder,oldRoadmaps(k).name));
+end
+
+%% ================================================== MANIFEST ================
+manFile=fullfile(OUT_ROOT,'figures','figure_manifest.csv');
+if ~isempty(MAN)
+    writetable(cell2table(MAN,'VariableNames', ...
+        {'figure_id','suggested_caption','source_type','block_or_data_source','output_file'}), manFile);
+end
+fprintf('\nMASTER_C (v4) complete. %d figures generated (Chapters 4-6; roadmap disabled).\nManifest -> %s\n', size(MAN,1), manFile);
+
+%% =========================================================================
+%%  LOCAL FUNCTIONS
+%% =========================================================================
+function M = addrow(M,id,cap,st,src,out)
+    M(end+1,:) = {id,cap,st,src,out};
+end
+function ok = safefig(fout, fn)
+    ok=false;
+    try, fn(fout); ok=true;
+    catch ME, warning('Figure %s failed: %s', fout, ME.message); end
+end
+function r = safeeval(fn)
+    try, r=fn(); catch, r={}; end
+end
+function s = slug(t)
+    s=lower(regexprep(t,'[^a-zA-Z0-9]+','_')); s=regexprep(s,'^_|_$','');
+end
+function p=relp(f); p=strrep(f,[pwd filesep],''); end
+function h=namef(MODEL,tok)
+% Resolve a root-level block from the LIVE model by normalised name:
+% exact match first, then prefix, then substring — so 'T2' resolves to the
+% 'T2 33KV-11KV AUX' transformer, not CB_T2_BUS5 or the T2 measurement.
+% (No BlockType filter: linked library blocks do not report BlockType
+% 'Reference' at runtime.)
+    h=''; blks=find_system(MODEL,'SearchDepth',1);
+    nms=repmat({''},numel(blks),1);
+    for i=1:numel(blks)
+        if ~strcmp(blks{i},MODEL)
+            nms{i}=strtrim(regexprep(get_param(blks{i},'Name'),'\s+',' '));
         end
     end
-    R.f1_ci_lo = prctile(boot_f1,2.5, 1);
-    R.f1_ci_hi = prctile(boot_f1,97.5,1);
+    for i=1:numel(blks); if strcmp(nms{i},tok);     h=blks{i}; return; end; end
+    for i=1:numel(blks); if startsWith(nms{i},tok); h=blks{i}; return; end; end
+    for i=1:numel(blks); if contains(nms{i},tok);   h=blks{i}; return; end; end
+end
 
-    % Majority-class baseline
-    n_cls_vec = histcounts(M.y_train,-0.5:12.5);
-    [~,maj_cls] = max(n_cls_vec);  maj_cls = maj_cls - 1;
-    y_maj  = repmat(maj_cls, n, 1);
-    R.acc_majority    = mean(y_maj == R.y_test);
-    mf1_maj_c = zeros(n_cls,1);
-    for c_mc = 0:12
-        tp_mc=sum((R.y_test==c_mc)&(y_maj==c_mc)); fp_mc=sum((R.y_test~=c_mc)&(y_maj==c_mc));
-        nc_mc=sum(R.y_test==c_mc);
-        pr_mc=tp_mc/max(tp_mc+fp_mc,1); re_mc=tp_mc/max(nc_mc,1);
-        mf1_maj_c(c_mc+1)=2*pr_mc*re_mc/max(pr_mc+re_mc,1e-9);
+% -------------------------- schematic drawings ----------------------------
+function draw_topology(fout)
+    fig=figure('Visible','off','Position',[40 40 1120 470],'Color','w'); ax=axes(fig); hold(ax,'on'); axis(ax,'off');
+    B=@(x,y,w,h,c) rectangle(ax,'Position',[x y w h],'Curvature',0.12,'FaceColor',c,'EdgeColor','k','LineWidth',1);
+    Tx=@(x,y,s) text(ax,x,y,s,'HorizontalAlignment','center','FontSize',9,'FontWeight','bold');
+    L=@(x1,y1,x2,y2,varargin) plot(ax,[x1 x2],[y1 y2],'k-','LineWidth',1.6,varargin{:});
+    c1=[.80 .90 1]; c2=[1 .88 .78];
+    B(0.2,3,1,.8,c1);Tx(.7,3.4,'33 kV Src');L(1.2,3.4,1.8,3.4);
+    B(1.8,3,1,.8,c1);Tx(2.3,3.4,'T1');L(2.8,3.4,3.4,3.4);
+    B(3.4,3,1,.6,c2);Tx(3.9,3.3,'CB\_MAIN');L(4.4,3.3,5.0,3.3);
+    B(5.0,3,.9,.6,c1);Tx(5.45,3.3,'B2');L(5.9,3.3,6.4,3.3);
+    B(6.4,3,1,.6,c2);Tx(6.9,3.3,'CB\_B3');L(7.4,3.3,7.9,3.3);
+    B(7.9,3,.9,.6,c1);Tx(8.35,3.3,'B3');L(8.8,3.3,9.3,3.3);
+    B(9.3,3,1,.6,c2);Tx(9.8,3.3,'CB\_B4');L(10.3,3.3,10.8,3.3);
+    B(10.8,3,.9,.6,c1);Tx(11.25,3.3,'B4');
+    B(1.8,1,1,.8,c1);Tx(2.3,1.4,'T2 AUX');L(2.8,1.4,3.4,1.4);
+    B(3.4,1,1,.6,c2);Tx(3.9,1.3,'CB\_T2');L(4.4,1.3,10.8,1.3);
+    B(10.8,1,.9,.6,c1);Tx(11.25,1.3,'B5');
+    plot(ax,[11.25 11.25],[3.0 1.6],'r--','LineWidth',1.8);Tx(11.85,2.3,'TIE (NO)');
+    xlim(ax,[0 12.8]); ylim(ax,[.5 4.2]);
+    title(ax,'Sectionalised radial feeder — T1 main (B2-B3-B4), T2 auxiliary (B5), B4-B5 tie');
+    exportgraphics(fig,fout,'Resolution',200); close(fig);
+end
+function draw_sld(fout)
+    fig=figure('Visible','off','Position',[40 40 900 560],'Color','w'); ax=axes(fig); hold(ax,'on'); axis(ax,'off');
+    plot(ax,[1 1],[1 9],'k-','LineWidth',2); text(ax,1.1,9,'33 kV busbar','FontWeight','bold');
+    for k=0:3
+        y=7-k*1.8; plot(ax,[1 3],[y y],'k-','LineWidth',1.5);
+        text(ax,3.1,y,sprintf('Zone B%d',k+2),'FontWeight','bold');
     end
-    R.macro_f1_majority = mean(mf1_maj_c);
-    % McNemar
-    b_mcn = sum((R.y_pred~=R.y_test)&(y_maj==R.y_test));
-    c_mcn = sum((R.y_pred==R.y_test)&(y_maj~=R.y_test));
-    R.chi2_stat = (abs(b_mcn-c_mcn)-1)^2 / max(b_mcn+c_mcn,1);
-    try
-        R.p_val = 1 - chi2cdf(R.chi2_stat, 1);
-    catch
-        R.p_val = exp(-R.chi2_stat/2);
+    title(ax,'Simplified single-line diagram (illustrative)');
+    xlim(ax,[0 6]); ylim(ax,[0 10]);
+    exportgraphics(fig,fout,'Resolution',200); close(fig);
+end
+function draw_zones(fout)
+    fig=figure('Visible','off','Position',[40 40 900 480],'Color','w'); ax=axes(fig); hold(ax,'on'); axis(ax,'off');
+    cols=lines(4); nm={'B2','B3','B4','B5'};
+    for k=1:4
+        rectangle(ax,'Position',[k*2-1 3 1.6 1.2],'Curvature',0.15,'FaceColor',cols(k,:),'EdgeColor','k');
+        text(ax,k*2-0.2,3.6,nm{k},'HorizontalAlignment','center','FontWeight','bold','Color','w');
     end
-
-    % Ablation accuracies
-    rng(42);
-    cols_23 = [2:24];
-    rf_ab1  = TreeBagger(200, M.X_train(:,cols_23), M.y_train, 'Method','classification', ...
-        'NumPredictorsToSample',max(1,floor(sqrt(23))),'MinLeafSize',1);
-    yp1 = str2double(predict(rf_ab1, R.X_test(:,cols_23)));
-    rng(42);
-    cols_18 = [4:24];
-    rf_ab2  = TreeBagger(200, M.X_train(:,cols_18), M.y_train, 'Method','classification', ...
-        'NumPredictorsToSample',max(1,floor(sqrt(18))),'MinLeafSize',1);
-    yp2 = str2double(predict(rf_ab2, R.X_test(:,cols_18)));
-    R.ablation_acc = [R.acc; mean(yp1==R.y_test); mean(yp2==R.y_test)];
-
-    HAS_RF = true;
-    fprintf('[DATA] RF model loaded + metrics recomputed\n');
-    fprintf('       Accuracy=%.4f  OOB=%.4f  MacroF1=%.4f\n\n', ...
-        R.acc, R.oob_err, R.macro_f1);
+    text(ax,4,5.2,'Protection zones — one fault zone isolated at a time','FontWeight','bold','HorizontalAlignment','center');
+    plot(ax,[6.6 8.9],[3.6 3.6],'r--','LineWidth',1.8); text(ax,7.5,4,'B4-B5 tie (NO)','Color','r','HorizontalAlignment','center');
+    xlim(ax,[0 10]); ylim(ax,[2 6]); exportgraphics(fig,fout,'Resolution',200); close(fig);
 end
+function draw_scenarios(OUT_ROOT, fout)
+% Comparison computed from restoration_results_v2.csv. An annotated matrix
+% is used instead of grouped bars so zero de-energised zones remain visible.
+    T=readtable(fullfile(OUT_ROOT,'restoration_results_v2.csv'));
+    zones={'B2','B3','B4','B5'};
+    zoneCol=strtrim(string(T.Zone));
 
-if exist('restoration_summary.txt','file')
-    HAS_RESTORE = true;
-    fprintf('[DATA] Restoration summary found\n\n');
-end
+    conventional=[2 1 0 0];
+    proposed=nan(1,4);
 
-n_feat = 24;
-if HAS_DATASET; n_feat = size(X,2); end
+    for k=1:4
+        i=find(zoneCol==string(zones{k}) & abs(T.LoadMult-1.00)<1e-6,1);
+        if isempty(i); continue; end
 
+        healthy=setdiff(zones,zones(k),'stable');
+        energised=[split_zones(table_text(T,'RestoredZones',i)); ...
+                   split_zones(table_text(T,'RemainsOnT1',i))];
 
-%% =========================================================================
-%%  CHAPTER 3 — METHODOLOGY  (8 figures)
-%% =========================================================================
-fprintf('--- CHAPTER 3 ---\n');
-
-%% Fig 3.1 — Feeder Topology
-fig = figure('Visible','on','Position',[50 50 920 440]);
-ax  = axes('Position',[0.01 0.01 0.98 0.88]);
-axis(ax,[0 1 0 1]); axis(ax,'off'); hold(ax,'on');
-
-bx  = [0.08,0.26,0.46,0.66,0.86]; by=0.62; bw=0.13; bh=0.30;
-btitles = {'B1','B2','B3','B4','B5/SXEW'};
-bsubs   = {{'33/11 kV','T1 20 MVA'},{'Dewatering','1.5 MW'}, ...
-           {'Ventilation','2.0 MW'},{'Crusher','2.5 MW'},{'SX-EW Plant','1.65 MW'}};
-for k=1:5
-    rectangle('Position',[bx(k)-bw/2,by-bh/2,bw,bh],'Curvature',0.10, ...
-        'FaceColor',[0.85 0.92 1.0],'EdgeColor',[0.10 0.30 0.70],'LineWidth',1.5);
-    text(bx(k),by+0.06,btitles{k},'HorizontalAlignment','center', ...
-        'FontName',FN,'FontWeight','bold','FontSize',FS_L,'Color',[0.10 0.30 0.70]);
-    text(bx(k),by-0.02,bsubs{k}{1},'HorizontalAlignment','center', ...
-        'FontName',FN,'FontSize',FS_A);
-    text(bx(k),by-0.08,bsubs{k}{2},'HorizontalAlignment','center', ...
-        'FontName',FN,'FontSize',FS_A);
-end
-
-cb_w=0.062; cb_h=0.060;
-for k=1:4
-    x1=bx(k)+bw/2; x2=bx(k+1)-bw/2; cbx=(x1+x2)/2;
-    plot([x1,cbx-cb_w/2],[by,by],'k-','LineWidth',1.8);
-    plot([cbx+cb_w/2,x2-0.005],[by,by],'k-','LineWidth',1.8);
-    plot(x2,by,'k>','MarkerSize',5,'MarkerFaceColor','k','LineWidth',1);
-    rectangle('Position',[cbx-cb_w/2,by-cb_h/2,cb_w,cb_h], ...
-        'FaceColor','w','EdgeColor',[0.25 0.25 0.25],'LineWidth',1);
-    text(cbx,by,sprintf('CB%d-%d',k,k+1),'HorizontalAlignment','center', ...
-        'FontName',FN,'FontSize',FS_A,'FontWeight','bold','Color','k');
-end
-
-tx=mean([bx(4),bx(5)]); ty=0.17;
-plot([bx(4),tx-0.02],[by-bh/2,ty+0.06],'Color',[0.75 0 0],'LineStyle','--','LineWidth',1.3);
-plot([bx(5),tx+0.02],[by-bh/2,ty+0.06],'Color',[0.75 0 0],'LineStyle','--','LineWidth',1.3);
-text(tx,0.37,'TIE-SW (N/O)','HorizontalAlignment','center','FontName',FN, ...
-    'FontSize',FS_A,'Color',[0.75 0 0],'FontWeight','bold');
-rectangle('Position',[tx-0.09,ty-0.055,0.18,0.11],'Curvature',0.12, ...
-    'FaceColor',[1.0 0.95 0.80],'EdgeColor',[0.70 0.50 0.00],'LineWidth',1.5);
-text(tx,ty+0.020,'T2 Backup','HorizontalAlignment','center', ...
-    'FontName',FN,'FontWeight','bold','FontSize',FS_A);
-text(tx,ty-0.022,'33/11 kV','HorizontalAlignment','center','FontName',FN,'FontSize',FS_A);
-
-for k=2:5
-    plot(bx(k),by+bh/2+0.06,'r*','MarkerSize',9,'LineWidth',1.2);
-    text(bx(k)+0.018,by+bh/2+0.06,'F','FontName',FN,'FontSize',FS_A,'Color','r','FontWeight','bold');
-end
-lx=0.01; ly=0.97; ls=0.06;
-text(lx,ly,'\ast  Fault location (F)','FontName',FN,'FontSize',FS_A,'Color',[0.5 0 0]);
-text(lx,ly-ls,'--  Tie-switch path (N/O)','FontName',FN,'FontSize',FS_A,'Color',[0.75 0 0]);
-text(lx,ly-2*ls,'CB = Circuit Breaker','FontName',FN,'FontSize',FS_A,'Color','k');
-title('33/11 kV Mining Distribution Feeder — Single-Line Diagram', ...
-    'FontName',FN,'FontWeight','bold','FontSize',FS_T);
-savefig_ch('figures/ch3_methodology/Fig3_1_feeder_topology.png',fig);
-
-
-%% Fig 3.2 — Methodology Flowchart
-fig = figure('Visible','on','Position',[50 50 500 760]);
-ax  = axes('Position',[0 0 1 1]); axis off; hold on; xlim([0 1]); ylim([0 1]);
-
-steps  = {'1. Problem Formulation', ...
-          {'2. Feeder Modelling','(Simulink 33/11 kV)'}, ...
-          {'3. Fault Simulation','(SLG, LL, 3PH at B2-B5)'}, ...
-          {'4. Dataset Generation','(1,000 samples, 13 classes)'}, ...
-          {'5. Feature Extraction','(24 RMS features)'}, ...
-          {'6. RF Training','(500 trees, cost-sensitive)'}, ...
-          {'7. Self-Healing Logic','(Isolation + Tie-switch)'}, ...
-          {'8. Evaluation & Validation',''}};
-scolors= {[0.85 0.92 1.0],[0.90 1.0 0.85],[0.90 1.0 0.85],[0.90 1.0 0.85], ...
-          [1.0 0.95 0.80],[1.0 0.95 0.80],[1.0 0.85 0.85],[0.95 0.85 1.0]};
-ys = linspace(0.94,0.07,8);
-for k=1:8
-    rectangle('Position',[0.16,ys(k)-0.042,0.68,0.082],'Curvature',0.28, ...
-        'FaceColor',scolors{k},'EdgeColor',[0.3 0.3 0.3],'LineWidth',1);
-    if iscell(steps{k})
-        text(0.50,ys(k)+0.016,steps{k}{1},'HorizontalAlignment','center', ...
-            'FontName',FN,'FontSize',FS_A,'FontWeight','bold');
-        text(0.50,ys(k)-0.015,steps{k}{2},'HorizontalAlignment','center', ...
-            'FontName',FN,'FontSize',FS_A);
-    else
-        text(0.50,ys(k),steps{k},'HorizontalAlignment','center', ...
-            'FontName',FN,'FontSize',FS_A,'FontWeight','bold');
-    end
-    if k<8
-        ya1=ys(k)-0.042; ya2=ys(k+1)+0.038;
-        plot([0.50 0.50],[ya1 ya2],'k-','LineWidth',1);
-        plot(0.50,ya2+0.003,'kv','MarkerSize',5,'MarkerFaceColor','k');
-    end
-end
-text(0.5,0.99,'Research Methodology Flowchart','HorizontalAlignment','center', ...
-    'FontName',FN,'FontWeight','bold','FontSize',FS_T);
-savefig_ch('figures/ch3_methodology/Fig3_2_methodology_flowchart.png',fig);
-
-
-%% Fig 3.3 — Parameter Sweep 3D
-fig = figure('Visible','on','Position',[50 50 FIG_W FIG_H]);
-Rf_v=[0.001,0.1,0.5,1.0,5.0]; lm_v=[0.70,0.85,1.00,1.10,1.30]; ton_v=[0.50,0.75,1.00];
-[Rf_g,lm_g,ton_g] = ndgrid(1:5,1:5,1:3);
-scatter3(Rf_v(Rf_g(:)),lm_v(lm_g(:)),ton_v(ton_g(:)),50,ton_g(:),'filled','MarkerFaceAlpha',0.7);
-colormap(parula); cb=colorbar; cb.Label.String='Fault Onset Time (s)'; cb.FontSize=FS_K;
-clim([1 3]); cb.Ticks=1:3; cb.TickLabels={'0.50','0.75','1.00'};
-xlabel('Fault Resistance R_f (\Omega)','FontName',FN,'FontSize',FS_L);
-ylabel('Load Multiplier (pu)','FontName',FN,'FontSize',FS_L);
-zlabel('Fault Onset Time (s)','FontName',FN,'FontSize',FS_L);
-title({'Parameter Sweep Space — 75 Samples per Fault Class','5 \times 5 \times 3 = 75 combinations'}, ...
-    'FontName',FN,'FontSize',FS_T);
-set(gca,'XScale','log'); grid on; view(35,25);
-savefig_ch('figures/ch3_methodology/Fig3_3_parameter_sweep.png',fig);
-
-
-%% Fig 3.4 — Feature Vector
-fig  = figure('Visible','on','Position',[50 50 880 340]);
-ax   = axes('Position',[0.01 0.05 0.98 0.88]); axis off; hold on;
-xlim([0 1]); ylim([0 1]);
-buses_fe={'B2','B3','B4','B5'}; types_fe={'V','I'}; phases_fe={'A','B','C'};
-col_clr={[0.78 0.89 1.0],[1.0 0.88 0.76]};
-total_cols=24; margin_l=0.02; margin_r=0.02;
-col_w=(1-margin_l-margin_r)/total_cols - 0.002;
-col_h=0.50; y_box=0.38; feat_n=1;
-for b=1:4
-    for t=1:2
-        for ph=1:3
-            col_idx=(b-1)*6+(t-1)*3+ph;
-            x_fe=margin_l+(col_idx-1)*(col_w+0.002);
-            rectangle('Position',[x_fe,y_box,col_w,col_h],'FaceColor',col_clr{t}, ...
-                'EdgeColor',[0.55 0.55 0.55],'LineWidth',0.5);
-            text(x_fe+col_w/2,y_box+col_h*0.70, ...
-                sprintf('%s_{%s%s}',types_fe{t},buses_fe{b},phases_fe{ph}), ...
-                'HorizontalAlignment','center','FontName',FN,'FontSize',7,'FontWeight','bold');
-            text(x_fe+col_w/2,y_box+col_h*0.28,sprintf('f%d',feat_n), ...
-                'HorizontalAlignment','center','FontName',FN,'FontSize',7,'Color',[0.45 0.45 0.45]);
-            feat_n=feat_n+1;
+        if ~strcmp(zones{k},'B5')
+            energised{end+1,1}='B5'; %#ok<AGROW>
         end
-    end
-end
-for b=1:4
-    col_s=(b-1)*6+1; col_e=col_s+5;
-    x_s=margin_l+(col_s-1)*(col_w+0.002); x_e=margin_l+(col_e-1)*(col_w+0.002)+col_w;
-    x_m=(x_s+x_e)/2;
-    plot([x_s+0.002 x_e-0.002],[y_box+col_h+0.04 y_box+col_h+0.04], ...
-        'Color',[0.15 0.25 0.6],'LineWidth',1.2);
-    text(x_m,y_box+col_h+0.09,sprintf('Bus %s',buses_fe{b}), ...
-        'HorizontalAlignment','center','FontName',FN,'FontWeight','bold', ...
-        'FontSize',FS_A,'Color',[0.1 0.1 0.5]);
-end
-rectangle('Position',[margin_l-0.005,y_box-0.02,1-margin_l-margin_r+0.01,col_h+0.04], ...
-    'EdgeColor',[0.2 0.2 0.7],'LineWidth',1.5,'Curvature',0.01);
-y_ar=y_box-0.15;
-plot([margin_l 1-margin_r],[y_ar y_ar],'k-','LineWidth',1.5);
-plot(1-margin_r,y_ar,'k>','MarkerSize',6,'MarkerFaceColor','k');
-text(0.50,y_ar+0.07,'Feature index:  f1 \rightarrow f24','HorizontalAlignment','center', ...
-    'FontName',FN,'FontSize',FS_A,'Color',[0.4 0.4 0.4]);
-title('Feature Vector:  4 Buses \times 2 Signal Types (V, I) \times 3 Phases (A,B,C) = 24 Features', ...
-    'FontName',FN,'FontSize',FS_T,'FontWeight','bold');
-savefig_ch('figures/ch3_methodology/Fig3_4_feature_extraction.png',fig);
-
-
-%% Fig 3.5 — RF Architecture
-fig = figure('Visible','on','Position',[50 50 FIG_W 400]);
-ax = axes; axis off; hold on; xlim([0 1]); ylim([0 1]);
-box_y=0.18; box_h=0.68; line_y=0.50;
-
-rectangle('Position',[0.02 box_y 0.10 box_h],'Curvature',0.12, ...
-    'FaceColor',[0.85 0.92 1.0],'EdgeColor',[0.1 0.3 0.7],'LineWidth',1.5);
-text(0.07,0.58,'Feature','HorizontalAlignment','center','FontName',FN,'FontWeight','bold','FontSize',FS_A);
-text(0.07,0.52,'Vector','HorizontalAlignment','center','FontName',FN,'FontWeight','bold','FontSize',FS_A);
-text(0.07,0.45,'(1\times24)','HorizontalAlignment','center','FontName',FN,'FontSize',FS_A);
-
-rectangle('Position',[0.84 box_y 0.14 box_h],'Curvature',0.12, ...
-    'FaceColor',[1.0 0.90 0.75],'EdgeColor',[0.8 0.4 0.0],'LineWidth',1.5);
-text(0.91,0.58,'Cost-Wt','HorizontalAlignment','center','FontName',FN,'FontWeight','bold','FontSize',FS_A);
-text(0.91,0.52,'Majority','HorizontalAlignment','center','FontName',FN,'FontWeight','bold','FontSize',FS_A);
-text(0.91,0.45,'Vote','HorizontalAlignment','center','FontName',FN,'FontSize',FS_A);
-
-n_show=5; tree_x=linspace(0.21,0.74,n_show); tw=0.09;
-tree_lbls={'Tree 1','Tree 2','...','Tree 250','Tree 500'};
-for k=1:n_show
-    tx1=tree_x(k)-tw/2; tx2=tree_x(k)+tw/2;
-    rectangle('Position',[tx1 box_y tw box_h],'Curvature',0.12, ...
-        'FaceColor',[0.90 1.0 0.85],'EdgeColor',[0.1 0.6 0.1],'LineWidth',1);
-    cx=tree_x(k); cy=0.68;
-    plot([cx cx-0.020],[cy cy-0.05],'k-','LineWidth',1.0);
-    plot([cx cx+0.020],[cy cy-0.05],'k-','LineWidth',1.0);
-    plot([cx-0.020 cx-0.030],[cy-0.05 cy-0.10],'k-','LineWidth',1.0);
-    plot([cx-0.020 cx-0.008],[cy-0.05 cy-0.10],'k-','LineWidth',1.0);
-    plot([cx+0.020 cx+0.008],[cy-0.05 cy-0.10],'k-','LineWidth',1.0);
-    plot([cx+0.020 cx+0.030],[cy-0.05 cy-0.10],'k-','LineWidth',1.0);
-    plot(cx,cy,'ko','MarkerSize',3,'MarkerFaceColor','k');
-    text(tree_x(k),0.40,tree_lbls{k},'HorizontalAlignment','center', ...
-        'FontName',FN,'FontSize',FS_A,'FontWeight','bold');
-    text(tree_x(k),0.33,'(5 features)','HorizontalAlignment','center', ...
-        'FontName',FN,'FontSize',FS_A);
-    if k==1
-        plot([0.12 tx1],[line_y line_y],'-','LineWidth',1,'Color',[0.5 0.5 0.5]);
-    else
-        plot([tree_x(k-1)+tw/2 tx1],[line_y line_y],'-','LineWidth',1,'Color',[0.5 0.5 0.5]);
-    end
-    if k==n_show
-        plot([tx2 0.84],[line_y line_y],'-','LineWidth',1,'Color',[0.5 0.5 0.5]);
-        plot(0.84,line_y,'k>','MarkerSize',4,'MarkerFaceColor','k');
-    end
-end
-plot(tree_x(1)-tw/2,line_y,'k>','MarkerSize',4,'MarkerFaceColor','k');
-text(0.50,0.10,'500 trees,  m_{try}=\lfloor\surd24\rfloor=5 features/split,  Cost: Fault\rightarrowHealthy=12.5\times', ...
-    'HorizontalAlignment','center','FontName',FN,'FontSize',FS_A,'Color',[0.35 0.35 0.35],'FontAngle','italic');
-title('Random Forest Architecture — 500 Trees, Cost-Sensitive (12.5\times False Negative Penalty)', ...
-    'FontName',FN,'FontSize',FS_T,'FontWeight','bold');
-savefig_ch('figures/ch3_methodology/Fig3_5_rf_architecture.png',fig);
-
-
-%% Fig 3.6 — Self-Healing Logic Flowchart
-fig = figure('Visible','on','Position',[50 50 500 800]);
-ax = axes('Position',[0.01 0.01 0.98 0.88]); axis off; hold on; xlim([0 1]); ylim([0 1]);
-
-fsteps = {'START: System Monitoring', {'Measure V & I','(4 buses, 3 phases)'}, ...
-          {'Extract 24 RMS','Features'}, {'RF Classifier','Predict Class'}, ...
-          'Class = 0  (Healthy)?', {'Identify Fault Bus','from Class Label'}, ...
-          {'Open CB at','Faulted Bus'}, {'Healthy Buses','Re-Energised'}, ...
-          {'Close Tie-Switch','(Alternate Supply)'}, ...
-          {'Post-Restoration','Voltage Check'}, 'END: Log & Alert'};
-fcolors= {[0.9 0.9 0.9],[0.85 0.92 1],[0.85 0.92 1],[0.85 0.92 1], ...
-          [1.0 0.95 0.75],[1.0 0.88 0.75],[1.0 0.75 0.75],[0.75 1.0 0.80], ...
-          [0.75 1.0 0.80],[0.90 0.80 1.0],[0.80 0.80 0.80]};
-fy = linspace(0.95,0.05,11);
-
-for k=1:11
-    if k==5
-        cx=0.50; cy=fy(k); hw=0.22; hh=0.045;
-        patch([cx-hw cx cx+hw cx],[cy cy+hh cy cy-hh],fcolors{k}, ...
-            'EdgeColor',[0.3 0.3 0.3],'LineWidth',1);
-        text(cx,cy,fsteps{k},'HorizontalAlignment','center', ...
-            'FontName',FN,'FontSize',FS_A,'FontWeight','bold');
-    else
-        rectangle('Position',[0.20,fy(k)-0.038,0.60,0.076], ...
-            'Curvature',0.28,'FaceColor',fcolors{k},'EdgeColor',[0.3 0.3 0.3],'LineWidth',1);
-        if iscell(fsteps{k})
-            text(0.50,fy(k)+0.014,fsteps{k}{1},'HorizontalAlignment','center', ...
-                'FontName',FN,'FontSize',FS_A,'FontWeight','bold');
-            text(0.50,fy(k)-0.014,fsteps{k}{2},'HorizontalAlignment','center', ...
-                'FontName',FN,'FontSize',FS_A);
-        else
-            text(0.50,fy(k),fsteps{k},'HorizontalAlignment','center', ...
-                'FontName',FN,'FontSize',FS_A,'FontWeight','bold');
-        end
-    end
-end
-for k=1:10
-    if k==4; ya1=fy(k)-0.038; ya2=fy(k+1)+0.045;
-    elseif k==5; ya1=fy(k)-0.045; ya2=fy(k+1)+0.038;
-    else; ya1=fy(k)-0.038; ya2=fy(k+1)+0.038; end
-    plot([0.50 0.50],[ya1 ya2],'k-','LineWidth',1);
-    plot(0.50,ya2+0.003,'kv','MarkerSize',4,'MarkerFaceColor','k');
-end
-plot([0.72 0.86],[fy(5) fy(5)],'-','LineWidth',1,'Color',[0 0.5 0]);
-plot([0.86 0.86],[fy(5) fy(2)],'-','LineWidth',1,'Color',[0 0.5 0]);
-plot([0.86 0.80],[fy(2) fy(2)],'-','LineWidth',1,'Color',[0 0.5 0]);
-plot(0.80,fy(2),'<','MarkerSize',5,'MarkerFaceColor',[0 0.5 0],'Color',[0 0.5 0]);
-text(0.88,(fy(2)+fy(5))/2,'YES','HorizontalAlignment','center', ...
-    'FontName',FN,'FontSize',FS_A,'Color',[0 0.5 0],'FontWeight','bold');
-text(0.88,(fy(2)+fy(5))/2-0.030,'(Normal)','HorizontalAlignment','center', ...
-    'FontName',FN,'FontSize',FS_A,'Color',[0 0.5 0]);
-text(0.56,(fy(5)+fy(6))/2+0.010,'NO (Fault)','FontName',FN,'FontSize',FS_A,'Color','r','FontWeight','bold');
-text(0.5,0.99,'Self-Healing Protection Logic Flowchart','HorizontalAlignment','center', ...
-    'FontName',FN,'FontWeight','bold','FontSize',FS_T);
-savefig_ch('figures/ch3_methodology/Fig3_6_selfhealing_logic.png',fig);
-
-
-%% Fig 3.7 — Healthy System Waveform (synthetic)
-t_w  = linspace(0,0.06,600); f50=50; Vp=11000/sqrt(3)*sqrt(2);
-VA=Vp*sin(2*pi*f50*t_w); VB=Vp*sin(2*pi*f50*t_w-2*pi/3); VC=Vp*sin(2*pi*f50*t_w+2*pi/3);
-IAp=1.5e6/(11e3/sqrt(3)*3)*sqrt(2); ph_lag=0.39;
-IA=IAp*sin(2*pi*f50*t_w-ph_lag); IB=IAp*sin(2*pi*f50*t_w-ph_lag-2*pi/3); IC=IAp*sin(2*pi*f50*t_w-ph_lag+2*pi/3);
-
-fig = figure('Visible','on','Position',[50 50 FIG_W 480]);
-subplot(2,1,1);
-plot(t_w*1000,VA/1000,'r-','LineWidth',1.2); hold on;
-plot(t_w*1000,VB/1000,'b-','LineWidth',1.2);
-plot(t_w*1000,VC/1000,'g-','LineWidth',1.2);
-ylabel('Voltage (kV)','FontName',FN,'FontSize',FS_L);
-title('Healthy System — Three-Phase Voltage at Bus B2 (Balanced, Rated)','FontName',FN,'FontSize',FS_T);
-legend({'V_A','V_B','V_C'},'Location','northeast','FontSize',FS_G);
-grid on; xlim([0 60]);
-subplot(2,1,2);
-plot(t_w*1000,IA,'r-','LineWidth',1.2); hold on;
-plot(t_w*1000,IB,'b-','LineWidth',1.2);
-plot(t_w*1000,IC,'g-','LineWidth',1.2);
-ylabel('Current (A)','FontName',FN,'FontSize',FS_L);
-xlabel('Time (ms)','FontName',FN,'FontSize',FS_L);
-title('Healthy System — Three-Phase Current at Bus B2 (Balanced)','FontName',FN,'FontSize',FS_T);
-legend({'I_A','I_B','I_C'},'Location','northeast','FontSize',FS_G);
-grid on; xlim([0 60]);
-savefig_ch('figures/ch3_methodology/Fig3_7_healthy_waveform.png',fig);
-
-
-%% Fig 3.8 — Fault Waveforms Comparison (synthetic, three fault types)
-t_w2=linspace(0,0.12,1200); t_f=0.04; idx_f=t_w2>=t_f;
-V_n=Vp*sin(2*pi*f50*t_w2); VB_n=Vp*sin(2*pi*f50*t_w2-2*pi/3); VC_n=Vp*sin(2*pi*f50*t_w2+2*pi/3);
-VA_slg=V_n; VA_slg(idx_f)=Vp*0.10*sin(2*pi*f50*t_w2(idx_f));
-VA_ll=V_n; VA_ll(idx_f)=Vp*0.30*sin(2*pi*f50*t_w2(idx_f));
-VB_ll=VB_n; VB_ll(idx_f)=Vp*0.30*sin(2*pi*f50*t_w2(idx_f)-2*pi/3);
-VA_3=V_n; VA_3(idx_f)=Vp*0.08*sin(2*pi*f50*t_w2(idx_f));
-VB_3=VB_n; VB_3(idx_f)=Vp*0.08*sin(2*pi*f50*t_w2(idx_f)-2*pi/3);
-VC_3=VC_n; VC_3(idx_f)=Vp*0.08*sin(2*pi*f50*t_w2(idx_f)+2*pi/3);
-
-fig = figure('Visible','on','Position',[50 50 FIG_W 620]);
-subplot(3,1,1);
-plot(t_w2*1000,VA_slg/1000,'r-','LineWidth',1.2); hold on;
-plot(t_w2*1000,VB_n/1000,'b--','LineWidth',1); plot(t_w2*1000,VC_n/1000,'g--','LineWidth',1);
-xline(t_f*1000,'k--','Fault onset','FontSize',FS_A,'FontName',FN);
-ylabel('Voltage (kV)','FontName',FN,'FontSize',FS_L);
-title('SLG Fault (Phase A to Ground) at Bus B4, R_f = 0.001 \Omega','FontName',FN,'FontSize',FS_T);
-legend({'V_A (faulted)','V_B','V_C'},'Location','northeast','FontSize',FS_G);
-grid on; ylim([-12 12]);
-subplot(3,1,2);
-plot(t_w2*1000,VA_ll/1000,'r-','LineWidth',1.2); hold on;
-plot(t_w2*1000,VB_ll/1000,'b-','LineWidth',1.2); plot(t_w2*1000,VC_n/1000,'g--','LineWidth',1);
-xline(t_f*1000,'k--');
-ylabel('Voltage (kV)','FontName',FN,'FontSize',FS_L);
-title('Line-to-Line Fault (Phase A-B) at Bus B4','FontName',FN,'FontSize',FS_T);
-legend({'V_A','V_B','V_C (healthy)'},'Location','northeast','FontSize',FS_G);
-grid on; ylim([-12 12]);
-subplot(3,1,3);
-plot(t_w2*1000,VA_3/1000,'r-','LineWidth',1.2); hold on;
-plot(t_w2*1000,VB_3/1000,'b-','LineWidth',1.2); plot(t_w2*1000,VC_3/1000,'g-','LineWidth',1.2);
-xline(t_f*1000,'k--');
-ylabel('Voltage (kV)','FontName',FN,'FontSize',FS_L);
-xlabel('Time (ms)','FontName',FN,'FontSize',FS_L);
-title('Three-Phase Fault at Bus B4 — All Phases Collapse','FontName',FN,'FontSize',FS_T);
-legend({'V_A','V_B','V_C'},'Location','northeast','FontSize',FS_G);
-grid on; ylim([-12 12]);
-sgtitle('Simulated Fault Voltage Waveforms — Bus B4','FontName',FN,'FontSize',FS_T+1,'FontWeight','bold');
-savefig_ch('figures/ch3_methodology/Fig3_8_fault_waveforms.png',fig);
-fprintf('  Chapter 3: 8 figures\n\n');
-
-
-%% =========================================================================
-%%  CHAPTER 4 — SYSTEM DESIGN  (4 figures)
-%% =========================================================================
-fprintf('--- CHAPTER 4 ---\n');
-
-%% Fig 4.1 — Fault Block Configuration table
-fig = figure('Visible','on','Position',[50 50 FIG_W 400]);
-ax  = axes; axis off;
-col_hdr  = {'Parameter','SLG (A-G)','Line-Line (A-B)','Three-Phase (ABC)'};
-row_lbl  = {'FaultA','FaultB','FaultC','GroundFault','FaultResistance','SwitchTimes','InitialStates','GroundResistance'};
-tdata    = {'on','on','on'; 'off','on','on'; 'off','off','on'; 'on','off','off'; ...
-            '0.001/0.1/0.5/1.0/5.0 \Omega','same','same'; '[t_{on}  t_{end}]','same','same'; ...
-            '0','same','same'; '0.001 \Omega','500 \Omega (N/A)','500 \Omega (N/A)'};
-draw_table(ax,col_hdr,row_lbl,tdata,FN,FS_A);
-title('Fault Block Configuration — Simulink Three-Phase Fault Block','FontName',FN,'FontSize',FS_T);
-savefig_ch('figures/ch4_system_design/Fig4_1_fault_block_config.png',fig);
-
-%% Fig 4.2 — Cost Matrix
-n_cls=13; cost_mat=ones(n_cls);
-for r=2:n_cls; cost_mat(r,1)=12.5; end
-cost_mat(logical(eye(n_cls)))=0;
-fig = figure('Visible','on','Position',[50 50 FIG_SQ FIG_SQ+30]);
-imagesc(cost_mat); colormap(hot); cb4=colorbar;
-cb4.Label.String='Misclassification Cost'; cb4.FontSize=FS_K;
-clim([0 12.5]);
-xticks(1:n_cls); xticklabels(SHORT); xtickangle(45);
-yticks(1:n_cls); yticklabels(SHORT);
-xlabel('Predicted Class','FontName',FN,'FontSize',FS_L);
-ylabel('True Class','FontName',FN,'FontSize',FS_L);
-title({'Asymmetric Misclassification Cost Matrix', ...
-       'Fault \rightarrow Healthy = 12.5\times | Other = 1.0 | Correct = 0'}, ...
-    'FontName',FN,'FontSize',FS_T);
-for r=1:n_cls; for c2=1:n_cls
-    if cost_mat(r,c2)>0
-        tc='k'; if cost_mat(r,c2)>6; tc='w'; end
-        text(c2,r,sprintf('%.1f',cost_mat(r,c2)),'HorizontalAlignment','center', ...
-            'FontName',FN,'FontSize',FS_A,'Color',tc,'FontWeight','bold');
-    end
-end; end
-savefig_ch('figures/ch4_system_design/Fig4_2_cost_matrix.png',fig);
-
-%% Fig 4.3 — Class Label Map
-fig = figure('Visible','on','Position',[50 50 700 440]);
-ax  = axes('Position',[0.01 0.02 0.98 0.88]); axis off; hold on;
-xlim([0 1]); ylim([0 1]);
-n_rows=6; n_cols=4; cw=1/n_cols; ch=0.80/n_rows; x0=0; y_top=0.98;
-bus_rows={'Healthy','Bus B2','Bus B3','Bus B4','Bus B5/SXEW'};
-type_cols={'SLG (A-G)','Line-Line (A-B)','Three-Phase (ABC)'};
-HDR_CLR=[0.22 0.36 0.60]; LBL_CLR=[0.88 0.88 0.88];
-y_r=y_top-ch;
-rectangle('Position',[x0,y_r,cw,ch],'FaceColor',HDR_CLR,'EdgeColor','w','LineWidth',0.8);
-text(x0+cw/2,y_r+ch/2,'Bus / Fault Type','HorizontalAlignment','center', ...
-    'FontName',FN,'FontSize',FS_A,'FontWeight','bold','Color','w');
-for tc=1:3
-    xp=x0+tc*cw;
-    rectangle('Position',[xp,y_r,cw,ch],'FaceColor',HDR_CLR,'EdgeColor','w','LineWidth',0.8);
-    text(xp+cw/2,y_r+ch/2,type_cols{tc},'HorizontalAlignment','center', ...
-        'FontName',FN,'FontSize',FS_A,'FontWeight','bold','Color','w');
-end
-y_r=y_top-2*ch;
-rectangle('Position',[x0,y_r,cw,ch],'FaceColor',LBL_CLR,'EdgeColor','k','LineWidth',0.7);
-text(x0+cw/2,y_r+ch/2,'Healthy','HorizontalAlignment','center', ...
-    'FontName',FN,'FontSize',FS_A,'FontWeight','bold');
-rectangle('Position',[x0+cw,y_r,3*cw,ch],'FaceColor',[C_HEALTHY*0.4+0.60],'EdgeColor','k','LineWidth',0.7);
-text(x0+cw+1.5*cw,y_r+ch/2,'Class 0  (Healthy — No Fault)','HorizontalAlignment','center', ...
-    'FontName',FN,'FontSize',FS_L,'FontWeight','bold');
-bus_lbl_clrs={C_B2*0.55+0.45,C_B3*0.55+0.45,C_B4*0.55+0.45,C_B5*0.55+0.45};
-bus_dat_clrs={C_B2*0.30+0.70,C_B3*0.30+0.70,C_B4*0.30+0.70,C_B5*0.30+0.70};
-for br=1:4
-    y_r=y_top-(br+2)*ch; cls_start=(br-1)*3+1;
-    rectangle('Position',[x0,y_r,cw,ch],'FaceColor',bus_lbl_clrs{br},'EdgeColor','k','LineWidth',0.7);
-    text(x0+cw/2,y_r+ch/2,bus_rows{br+1},'HorizontalAlignment','center', ...
-        'FontName',FN,'FontSize',FS_A,'FontWeight','bold');
-    for tc=1:3
-        xp=x0+tc*cw;
-        rectangle('Position',[xp,y_r,cw,ch],'FaceColor',bus_dat_clrs{br},'EdgeColor','k','LineWidth',0.7);
-        text(xp+cw/2,y_r+ch/2,sprintf('Class %d',cls_start+tc-1), ...
-            'HorizontalAlignment','center','FontName',FN,'FontSize',FS_L,'FontWeight','bold');
-    end
-end
-title('13-Class Label Map:  Fault Type \times Bus Location','FontName',FN,'FontWeight','bold','FontSize',FS_T+1);
-savefig_ch('figures/ch4_system_design/Fig4_3_class_label_map.png',fig);
-
-%% Fig 4.4 — RF Hyperparameter table
-fig = figure('Visible','on','Position',[50 50 640 400]);
-ax  = axes; axis off;
-params_hdr={'Hyperparameter','Value'};
-params_lbl={'Number of Trees','Features per Split','Min Leaf Size','Max Depth', ...
-    'Bootstrap Sampling','Cost Matrix','OOB Evaluation','Random Seed'};
-params_data={'500'; 'floor(\surd24) = 5'; '1'; 'Unlimited (full trees)'; ...
-    'Yes (bagging, 63.2% of samples)'; 'Asymmetric (12.5\times false negative)'; ...
-    'Enabled'; '42 (fixed, rng(42))'};
-draw_table(ax,params_hdr,params_lbl,params_data,FN,FS_A);
-title('Random Forest Hyperparameter Configuration','FontName',FN,'FontSize',FS_T);
-savefig_ch('figures/ch4_system_design/Fig4_4_rf_hyperparameters.png',fig);
-fprintf('  Chapter 4: 4 figures\n\n');
-
-
-%% =========================================================================
-%%  CHAPTER 5 — RESULTS  (14 figures)
-%% =========================================================================
-fprintf('--- CHAPTER 5 ---\n');
-
-if HAS_DATASET
-    counts=arrayfun(@(c) sum(labels==c),0:12);
-
-    %% Fig 5.1 — Class Distribution
-    fig=figure('Visible','on','Position',[50 50 FIG_W FIG_H]);
-    b5=bar(0:12,counts,'FaceColor','flat'); b5.CData=COLORS_13;
-    xticks(0:12); xticklabels(CLASS_NAMES); xtickangle(40);
-    ylabel('Number of Samples','FontName',FN,'FontSize',FS_L);
-    xlabel('Fault Class','FontName',FN,'FontSize',FS_L);
-    title(sprintf('Dataset Class Distribution — %d Samples Total',sum(counts)), ...
-        'FontName',FN,'FontSize',FS_T);
-    grid on;
-    for k=1:13
-        if counts(k)>0
-            text(k-1,counts(k)+1,num2str(counts(k)),'HorizontalAlignment','center', ...
-                'FontName',FN,'FontSize',FS_A,'FontWeight','bold');
-        end
-    end
-    yline(75,'r--','75 (fault target)','LabelHorizontalAlignment','right', ...
-        'FontSize',FS_A,'FontName',FN,'LineWidth',1);
-    yline(100,'g--','100 (healthy)','LabelHorizontalAlignment','right', ...
-        'FontSize',FS_A,'FontName',FN,'LineWidth',1);
-    savefig_ch('figures/ch5_results/Fig5_1_class_distribution.png',fig);
-
-    %% Fig 5.2 — Voltage Heatmap
-    v_idx=1:min(12,n_feat); v_names_h=feature_names(v_idx);
-    v_base=max(mean(X(labels==0,v_idx),1),1);
-    v_heat=zeros(13,12);
-    for c=0:12; idx=(labels==c); if any(idx); v_heat(c+1,:)=mean(X(idx,v_idx),1)./v_base; end; end
-    fig=figure('Visible','on','Position',[50 50 FIG_W FIG_H]);
-    imagesc(v_heat); colormap(hot); cb5=colorbar;
-    cb5.Label.String='V (norm. to healthy)'; cb5.FontSize=FS_K; clim([0 1.1]);
-    yticks(1:13); yticklabels(CLASS_NAMES);
-    xticks(1:length(v_idx)); xticklabels(strrep(v_names_h,'_','\_')); xtickangle(45);
-    xlabel('Voltage Feature','FontName',FN,'FontSize',FS_L);
-    ylabel('Class','FontName',FN,'FontSize',FS_L);
-    title('Mean Phase Voltage per Class (Normalised to Healthy)','FontName',FN,'FontSize',FS_T);
-    for r=1:13; for c2=1:length(v_idx)
-        tc='w'; if v_heat(r,c2)>0.55; tc='k'; end
-        text(c2,r,sprintf('%.2f',v_heat(r,c2)),'HorizontalAlignment','center', ...
-            'FontName',FN,'FontSize',FS_A,'Color',tc);
-    end; end
-    savefig_ch('figures/ch5_results/Fig5_2_voltage_heatmap.png',fig);
-
-    %% Fig 5.3 — Current Heatmap
-    if n_feat>=24
-        i_idx=13:24; i_names_h=feature_names(i_idx);
-        i_base=max(mean(X(labels==0,i_idx),1),1);
-        i_heat=zeros(13,12);
-        for c=0:12; idx=(labels==c); if any(idx); i_heat(c+1,:)=mean(X(idx,i_idx),1)./i_base; end; end
-        i_heat_d=min(i_heat,5);
-        fig=figure('Visible','on','Position',[50 50 FIG_W FIG_H]);
-        imagesc(i_heat_d); colormap(parula); cb6=colorbar;
-        cb6.Label.String='I (norm. to healthy, capped 5\times)'; cb6.FontSize=FS_K; clim([0 5]);
-        yticks(1:13); yticklabels(CLASS_NAMES);
-        xticks(1:12); xticklabels(strrep(i_names_h,'_','\_')); xtickangle(45);
-        xlabel('Current Feature','FontName',FN,'FontSize',FS_L);
-        ylabel('Class','FontName',FN,'FontSize',FS_L);
-        title({'Mean Phase Current per Class (Normalised to Healthy, Capped at 5\times)', ...
-               'Note: SLG at B3/B4/B5 shows anomalously low current — grounding limitation'}, ...
-            'FontName',FN,'FontSize',FS_T);
-        for r=1:13; for c2=1:12
-            v_=i_heat(r,c2); tc='k'; if i_heat_d(r,c2)>3; tc='w'; end
-            if v_>5; txt_='>5'; else; txt_=sprintf('%.1f',v_); end
-            text(c2,r,txt_,'HorizontalAlignment','center','FontName',FN,'FontSize',FS_A,'Color',tc);
-        end; end
-        savefig_ch('figures/ch5_results/Fig5_3_current_heatmap.png',fig);
+        energised=unique(energised,'stable');
+        proposed(k)=numel(setdiff(healthy,energised));
     end
 
-    %% Fig 5.4 — Feature Scatter
-    fig=figure('Visible','on','Position',[50 50 FIG_SQ FIG_SQ]);
-    hold on;
-    for c=0:12
-        idx=(labels==c); if ~any(idx); continue; end
-        scatter(X(idx,1),X(idx,13),18,COLORS_13(c+1,:),'filled', ...
-            'MarkerFaceAlpha',0.55,'DisplayName',CLASS_NAMES{c+1});
-    end
-    xlabel('V_{B2,A} RMS (V)','FontName',FN,'FontSize',FS_L);
-    ylabel('I_{B2,A} RMS (A)','FontName',FN,'FontSize',FS_L);
-    title('Feature Separability: Voltage vs Current at Bus B2 (Phase A)', ...
-        'FontName',FN,'FontSize',FS_T);
-    xline(11000/sqrt(3)*0.95,'k--','0.95 pu','HandleVisibility','off', ...
-        'LabelHorizontalAlignment','right','FontSize',FS_A,'FontName',FN);
-    xline(11000/sqrt(3)*1.05,'k--','1.05 pu','HandleVisibility','off', ...
-        'LabelHorizontalAlignment','right','FontSize',FS_A,'FontName',FN);
-    legend('Location','best','FontSize',FS_G,'NumColumns',2);
-    grid on; box on;
-    savefig_ch('figures/ch5_results/Fig5_4_scatter_separability.png',fig);
-end
+    M=[conventional; proposed];
+    finiteVals=M(isfinite(M));
+    if isempty(finiteVals); maxVal=3; else; maxVal=max(3,max(finiteVals)); end
 
-if HAS_RF
-    %% Fig 5.5 — OOB Error Curve
-    fig=figure('Visible','on','Position',[50 50 FIG_W FIG_H]);
-    oob_curve=oobError(R.rf_model);
-    plot(1:length(oob_curve),oob_curve*100,'b-','LineWidth',1.5);
-    xlabel('Number of Trees','FontName',FN,'FontSize',FS_L);
-    ylabel('OOB Error (%)','FontName',FN,'FontSize',FS_L);
-    title('Random Forest OOB Error vs Number of Trees','FontName',FN,'FontSize',FS_T);
-    xline(500,'r--',sprintf('N=500, OOB=%.2f%%',oob_curve(end)*100), ...
-        'LabelHorizontalAlignment','left','FontSize',FS_A,'FontName',FN,'LineWidth',1);
-    yline(5,'k:','5% reference','FontSize',FS_A,'FontName',FN,'LabelHorizontalAlignment','right');
-    grid on; box on;
-    savefig_ch('figures/ch5_results/Fig5_5_oob_error_curve.png',fig);
+    fig=figure('Visible','off','Position',[40 40 1050 520],'Color','w');
+    ax=axes(fig,'Position',[0.17 0.22 0.69 0.60]);
+    imagesc(ax,M,[0 maxVal]);
 
-    %% Fig 5.6 — Confusion Matrix
-    cm=R.cm; cm_norm=cm./max(sum(cm,2),1);
-    fig=figure('Visible','on','Position',[50 50 FIG_SQ+20 FIG_SQ+40]);
-    imagesc(cm_norm); colormap(flipud(hot));
-    cb7=colorbar; cb7.Label.String='Recall (Row Normalised)'; cb7.FontSize=FS_K; clim([0 1]);
-    for r=1:13; for c2=1:13
-        if cm(r,c2)>0
-            tc='w'; if cm_norm(r,c2)<0.5; tc='k'; end
-            text(c2,r,num2str(cm(r,c2)),'HorizontalAlignment','center', ...
-                'FontName',FN,'FontSize',FS_A,'Color',tc,'FontWeight','bold');
-        end
-    end; end
-    xticks(1:13); xticklabels(SHORT); xtickangle(45);
-    yticks(1:13); yticklabels(SHORT);
-    xlabel('Predicted Class','FontName',FN,'FontSize',FS_L);
-    ylabel('True Class','FontName',FN,'FontSize',FS_L);
-    title(sprintf('Confusion Matrix — Test Set, Accuracy = %.2f%%',R.acc*100), ...
-        'FontName',FN,'FontSize',FS_T);
-    savefig_ch('figures/ch5_results/Fig5_6_confusion_matrix.png',fig);
+    nmap=256;
+    cmap=[linspace(0.96,0.10,nmap)' linspace(0.98,0.45,nmap)' ones(nmap,1)];
+    colormap(ax,cmap);
+    cb=colorbar(ax);
+    cb.Label.String='Number of healthy zones remaining de-energised';
 
-    %% Fig 5.7 — Feature Importance
-    imp=R.imp; [imp_s,i_s]=sort(imp,'descend'); fn_s=R.feature_names(i_s);
-    fig=figure('Visible','on','Position',[50 50 FIG_W FIG_H]);
-    bar(imp_s,'FaceColor',[0.18 0.42 0.78]);
-    xticks(1:length(imp_s)); xticklabels(strrep(fn_s,'_','\_')); xtickangle(50);
-    ylabel('OOB Permutation Importance (MDA)','FontName',FN,'FontSize',FS_L);
-    title('Random Forest Feature Importance — Mean Decrease in Accuracy', ...
-        'FontName',FN,'FontSize',FS_T);
-    grid on; box on;
-    savefig_ch('figures/ch5_results/Fig5_7_feature_importance.png',fig);
+    set(ax,'XTick',1:4,'XTickLabel',zones, ...
+        'YTick',1:2,'YTickLabel',{'Conventional wide trip','Proposed self-healing scheme'}, ...
+        'FontName','Times New Roman','FontSize',12,'Layer','top','Box','on');
+    xlabel(ax,'Faulted zone');
+    ylabel(ax,'Protection strategy');
 
-    %% Fig 5.8 — Per-Class Metrics
-    fig=figure('Visible','on','Position',[50 50 FIG_W FIG_H]);
-    x_ax=0:12;
-    bg=bar(x_ax,[R.per_cls(:,1),R.per_cls(:,2),R.per_cls(:,3)],'grouped');
-    bg(1).FaceColor=[0.18 0.42 0.78];
-    bg(2).FaceColor=[0.84 0.19 0.15];
-    bg(3).FaceColor=[0.13 0.63 0.30];
-    xticks(0:12); xticklabels(CLASS_NAMES); xtickangle(40);
-    ylabel('Score','FontName',FN,'FontSize',FS_L); ylim([0 1.12]);
-    yline(0.95,'k:','0.95 target','LabelHorizontalAlignment','right', ...
-        'FontSize',FS_A,'FontName',FN);
-    legend({'Precision','Recall','F1-Score'},'Location','south','NumColumns',3,'FontSize',FS_G);
-    title('Per-Class Precision, Recall, and F1-Score — Test Set','FontName',FN,'FontSize',FS_T);
-    grid on; box on;
-    savefig_ch('figures/ch5_results/Fig5_8_per_class_metrics.png',fig);
-
-    %% Fig 5.9 — CV Folds
-    fig=figure('Visible','on','Position',[50 50 FIG_W FIG_H]);
-    bar(1:5,R.cv_acc*100,'FaceColor',[0.18 0.42 0.78],'EdgeColor',[0.1 0.2 0.5]);
-    hold on;
-    yline(R.cv_mean*100,'r-','LineWidth',1.5,'HandleVisibility','off');
-    yline(R.acc*100,'g--','LineWidth',1,'HandleVisibility','off');
-    text(5.6,R.cv_mean*100,sprintf(' CV Mean = %.2f%%',R.cv_mean*100), ...
-        'FontName',FN,'FontSize',FS_A,'Color','r','VerticalAlignment','bottom');
-    text(5.6,R.acc*100-0.4,sprintf(' Single Split = %.2f%%',R.acc*100), ...
-        'FontName',FN,'FontSize',FS_A,'Color',[0 0.5 0],'VerticalAlignment','top');
-    xticks(1:5); xticklabels({'Fold 1','Fold 2','Fold 3','Fold 4','Fold 5'});
-    ylabel('Accuracy (%)','FontName',FN,'FontSize',FS_L);
-    xlim([0.5 6.5]); ylim([90 102]);
-    for k=1:5
-        text(k,R.cv_acc(k)*100+0.3,sprintf('%.2f%%',R.cv_acc(k)*100), ...
-            'HorizontalAlignment','center','FontName',FN,'FontSize',FS_A,'FontWeight','bold');
-    end
-    title(sprintf('5-Fold Stratified CV: Mean = %.2f%% \\pm %.2f%%', ...
-        R.cv_mean*100,R.cv_std*100),'FontName',FN,'FontSize',FS_T);
-    grid on; box on;
-    savefig_ch('figures/ch5_results/Fig5_9_cv_accuracy_folds.png',fig);
-
-    %% Fig 5.10 — Baseline Comparison
-    fig=figure('Visible','on','Position',[50 50 FIG_W FIG_H]);
-    subplot(1,2,1);
-    bv=[R.acc_majority*100, R.acc*100];
-    bc=bar(1:2,bv,'FaceColor','flat');
-    bc.CData=[0.65 0.65 0.65; 0.18 0.42 0.78];
-    xticks(1:2); xticklabels({'Majority Baseline','Random Forest'});
-    ylabel('Accuracy (%)','FontName',FN,'FontSize',FS_L);
-    ylim([0 110]); grid on;
-    title('Accuracy vs Baseline','FontName',FN,'FontSize',FS_T);
-    for k=1:2; text(k,bv(k)+1.5,sprintf('%.1f%%',bv(k)),'HorizontalAlignment','center', ...
-        'FontName',FN,'FontSize',FS_A,'FontWeight','bold'); end
-    subplot(1,2,2);
-    mf=[R.macro_f1_majority*100, R.macro_f1*100];
-    bc2=bar(1:2,mf,'FaceColor','flat');
-    bc2.CData=[0.65 0.65 0.65; 0.18 0.42 0.78];
-    xticks(1:2); xticklabels({'Majority Baseline','Random Forest'});
-    ylabel('Macro F1 (%)','FontName',FN,'FontSize',FS_L);
-    ylim([0 110]); grid on;
-    title('Macro F1 vs Baseline','FontName',FN,'FontSize',FS_T);
-    for k=1:2; text(k,mf(k)+1.5,sprintf('%.1f%%',mf(k)),'HorizontalAlignment','center', ...
-        'FontName',FN,'FontSize',FS_A,'FontWeight','bold'); end
-    if R.p_val<0.001; pstr='p < 0.001'; else; pstr=sprintf('p = %.3f',R.p_val); end
-    sgtitle(sprintf('Classifier vs Majority-Class Baseline (McNemar \\chi^2 = %.2f, %s)', ...
-        R.chi2_stat,pstr),'FontName',FN,'FontSize',FS_T,'FontWeight','bold');
-    savefig_ch('figures/ch5_results/Fig5_10_baseline_comparison.png',fig);
-
-    %% Fig 5.11 — Ablation Study
-    fig=figure('Visible','on','Position',[50 50 FIG_W FIG_H]);
-    ab_colors=[0.18 0.42 0.78; 0.84 0.19 0.15; 0.89 0.55 0.00];
-    b_ab=bar(1:3,R.ablation_acc*100,'FaceColor','flat');
-    b_ab.CData=ab_colors;
-    xticks(1:3); xticklabels({'Full (24 feat.)','Without V_{B2,A} (23 feat.)','Without all B2 (18 feat.)'});
-    ylabel('Test Accuracy (%)','FontName',FN,'FontSize',FS_L);
-    ylim([max(0,min(R.ablation_acc*100)-8) 105]);
-    title({'Ablation Study — Robustness to Feature Removal', ...
-           'Does removing Bus B2 features break the classifier?'}, ...
-        'FontName',FN,'FontSize',FS_T);
-    grid on; box on;
-    for k=1:3
-        delta=(R.ablation_acc(k)-R.ablation_acc(1))*100;
-        text(k,R.ablation_acc(k)*100+0.5,sprintf('%.1f%% (%+.1f pp)',R.ablation_acc(k)*100,delta), ...
-            'HorizontalAlignment','center','FontName',FN,'FontSize',FS_A,'FontWeight','bold');
-    end
-    yline(R.ablation_acc(1)*100,'k--','Full model','FontSize',FS_A,'FontName',FN, ...
-        'LabelHorizontalAlignment','right');
-    savefig_ch('figures/ch5_results/Fig5_11_ablation_study.png',fig);
-
-    %% Fig 5.12 — Bootstrap F1 CI
-    fig=figure('Visible','on','Position',[50 50 FIG_W FIG_H]);
-    bar(0:12,R.per_cls(:,3),'FaceColor',[0.18 0.42 0.78]); hold on;
-    err_lo=R.per_cls(:,3)'-R.f1_ci_lo;
-    err_hi=R.f1_ci_hi-R.per_cls(:,3)';
-    errorbar(0:12,R.per_cls(:,3)',err_lo,err_hi,'k.','LineWidth',1.2,'CapSize',4, ...
-        'HandleVisibility','off');
-    xticks(0:12); xticklabels(CLASS_NAMES); xtickangle(40);
-    ylabel('F1 Score','FontName',FN,'FontSize',FS_L); ylim([0 1.15]);
-    yline(0.95,'r:','0.95 target','LabelHorizontalAlignment','right','FontSize',FS_A,'FontName',FN);
-    title({'Per-Class F1 Score with Bootstrap 95% Confidence Intervals', ...
-           'Note: [1.000,1.000] CIs are degenerate (n=15 per fault class)'}, ...
-        'FontName',FN,'FontSize',FS_T);
-    legend({'F1 Score'},'Location','south','FontSize',FS_G);
-    grid on; box on;
-    savefig_ch('figures/ch5_results/Fig5_12_f1_bootstrap_ci.png',fig);
-end
-
-%% Fig 5.13 — Restoration Voltage Bar Chart (real values from summary)
-fig=figure('Visible','on','Position',[50 50 FIG_W FIG_H]);
-stages={'Pre-Fault','During Fault','Post-Restoration'};
-vB4_100=[0.9818, 0.9811, 0.9818];
-vB4_85 =[0.9846, 0.9839, 0.9846];
-x=1:3; bar_w=0.30;
-hold on;
-bar(x-bar_w/2,vB4_100,bar_w,'FaceColor',[0.18 0.42 0.78],'DisplayName','Bus B4 (100% load)');
-bar(x+bar_w/2,vB4_85, bar_w,'FaceColor',[0.84 0.19 0.15],'DisplayName','Bus B4 (85% load)');
-yline(0.95,'k--','0.95 pu lower limit','FontSize',FS_A,'FontName',FN, ...
-    'LabelHorizontalAlignment','right','HandleVisibility','off','LineWidth',1);
-yline(1.05,'k-.','1.05 pu upper limit','FontSize',FS_A,'FontName',FN, ...
-    'LabelHorizontalAlignment','right','HandleVisibility','off','LineWidth',1);
-yline(1.00,'Color',[0.5 0.5 0.5],'LineStyle',':','HandleVisibility','off','LineWidth',0.8);
-for k=1:3
-    text(x(k)-bar_w/2,vB4_100(k)+0.001,sprintf('%.4f',vB4_100(k)), ...
-        'HorizontalAlignment','center','FontName',FN,'FontSize',FS_A);
-    text(x(k)+bar_w/2,vB4_85(k)+0.001,sprintf('%.4f',vB4_85(k)), ...
-        'HorizontalAlignment','center','FontName',FN,'FontSize',FS_A);
-end
-ylim([0.94 1.06]); xticks(1:3); xticklabels(stages);
-ylabel('RMS Voltage (pu)','FontName',FN,'FontSize',FS_L);
-legend('Location','southeast','FontSize',FS_G);
-title({'Bus B4 Voltage: Pre-Fault, During Fault, and Post-Restoration', ...
-       'SLG Fault (R_f = 0.001 \Omega), CB isolates at t=1.5 s, Tie-switch closes at t=2.0 s'}, ...
-    'FontName',FN,'FontSize',FS_T);
-text(0.5,0.07,{'Steady-state RMS from 20 ms windows.','Fault transient not captured (see Section 5.6).'}, ...
-    'Units','normalized','HorizontalAlignment','center','FontName',FN,'FontSize',FS_A, ...
-    'Color',[0.5 0.5 0.5],'FontAngle','italic');
-grid on; box on;
-savefig_ch('figures/ch5_results/Fig5_13_restoration_waveforms.png',fig);
-
-%% Fig 5.14 — Copy from restoration script output if it exists
-if exist('fig_restoration_rms.png','file')
-    copyfile('fig_restoration_rms.png','figures/ch5_results/Fig5_14_restoration_rms.png');
-    fprintf('  Copied: fig_restoration_rms.png\n');
-else
-    fprintf('  [SKIP] Fig5_14: run MASTER_B restoration first\n');
-end
-fprintf('  Chapter 5: 14 figures\n\n');
-
-
-%% =========================================================================
-%%  CHAPTER 6 — CONCLUSIONS  (3 figures)
-%% =========================================================================
-fprintf('--- CHAPTER 6 ---\n');
-
-%% Fig 6.1 — Scenario Comparison
-fig=figure('Visible','on','Position',[50 50 FIG_W 580]);
-sc_lbl={'Conventional','Relay-Based','ML Self-Healing'};
-sc_clr={[0.65 0.65 0.65],[0.45 0.65 0.85],[0.18 0.63 0.18]};
-
-subplot(2,2,1);
-vals=[4.0,4.0,1.3];
-for s=1:3; bar(s,vals(s),'FaceColor',sc_clr{s}); hold on; end
-xticks(1:3); xticklabels(sc_lbl); xtickangle(15);
-ylabel('Buses Affected','FontName',FN,'FontSize',FS_L); ylim([0 5.5]);
-title('Buses Affected by Outage','FontName',FN,'FontSize',FS_T); grid on;
-for s=1:3; text(s,vals(s)+0.15,sprintf('%.1f',vals(s)),'HorizontalAlignment','center', ...
-    'FontName',FN,'FontSize',FS_A,'FontWeight','bold'); end
-
-subplot(2,2,2);
-vals=[60,60,0.1];
-for s=1:3; bar(s,vals(s),'FaceColor',sc_clr{s}); hold on; end
-xticks(1:3); xticklabels(sc_lbl); xtickangle(15);
-ylabel('Restoration Time (min)','FontName',FN,'FontSize',FS_L); ylim([0 75]);
-title('Restoration Time','FontName',FN,'FontSize',FS_T); grid on;
-for s=1:3; text(s,vals(s)+1.5,sprintf('%.1f',vals(s)),'HorizontalAlignment','center', ...
-    'FontName',FN,'FontSize',FS_A,'FontWeight','bold'); end
-
-subplot(2,2,3);
-vals=[0,0,75];
-for s=1:3; bar(s,vals(s),'FaceColor',sc_clr{s}); hold on; end
-xticks(1:3); xticklabels(sc_lbl); xtickangle(15);
-ylabel('Healthy Load Restored (%)','FontName',FN,'FontSize',FS_L);
-ylim([0 95]); grid on;
-title('Healthy Load Restored (%)','FontName',FN,'FontSize',FS_T);
-for s=1:3; text(s,vals(s)+2,sprintf('%.0f%%',vals(s)),'HorizontalAlignment','center', ...
-    'FontName',FN,'FontSize',FS_A,'FontWeight','bold'); end
-
-subplot(2,2,4);
-vals=[2.0,0.0,0.0];
-for s=1:3; bar(s,vals(s),'FaceColor',sc_clr{s}); hold on; end
-xticks(1:3); xticklabels(sc_lbl); xtickangle(15);
-ylabel('Est. False Trips / Year','FontName',FN,'FontSize',FS_L);
-title('False Trip Rate','FontName',FN,'FontSize',FS_T); grid on; ylim([0 2.8]);
-for s=1:3; text(s,vals(s)+0.06,sprintf('%.1f',vals(s)),'HorizontalAlignment','center', ...
-    'FontName',FN,'FontSize',FS_A,'FontWeight','bold'); end
-
-sgtitle('Scenario Comparison: Conventional vs Relay-Based vs ML Self-Healing', ...
-    'FontName',FN,'FontSize',FS_T+1,'FontWeight','bold');
-savefig_ch('figures/ch6_conclusions/Fig6_1_scenario_comparison.png',fig);
-
-%% Fig 6.2 — Performance Radar
-if HAS_RF
-    fig=figure('Visible','on','Position',[50 50 FIG_SQ FIG_SQ+60]);
-    ax_r=axes('Position',[0.05 0.14 0.90 0.78]); hold on; axis equal off;
-    labels_r={'Accuracy','Fault Det.','Healthy Det.','Macro F1','Selectivity','Restore Speed'};
-    vals_t=[0.95,0.90,1.00,0.90,0.75,1.00];
-    vals_a=[R.acc,R.fault_det,R.healthy_det,R.macro_f1,0.75,1.00];
-    n_ax=length(labels_r);
-    theta=linspace(pi/2,pi/2-2*pi,n_ax+1); theta(end)=[];
-    for g=[0.25,0.50,0.75,1.0]
-        plot(g*cos(theta([1:end 1])),g*sin(theta([1:end 1])), ...
-            'Color',[0.85 0.85 0.85],'LineWidth',0.5,'HandleVisibility','off');
-        if g<1
-            text(0.03,g+0.02,sprintf('%.0f%%',g*100),'FontName',FN,'FontSize',FS_A, ...
-                'Color',[0.6 0.6 0.6],'HandleVisibility','off');
-        end
-    end
-    for k=1:n_ax
-        plot([0 cos(theta(k))],[0 sin(theta(k))], ...
-            'Color',[0.75 0.75 0.75],'LineWidth',0.5,'HandleVisibility','off');
-        text(1.30*cos(theta(k)),1.30*sin(theta(k)),labels_r{k}, ...
-            'HorizontalAlignment','center','FontName',FN,'FontSize',FS_A,'FontWeight','bold', ...
-            'HandleVisibility','off');
-    end
-    vt=[vals_t,vals_t(1)]; tt=[theta,theta(1)];
-    plot(vt.*cos(tt),vt.*sin(tt),'r--','LineWidth',1.5,'DisplayName','Target (95%)');
-    va=[vals_a,vals_a(1)];
-    patch(va.*cos(tt),va.*sin(tt),[0.18 0.42 0.78],'FaceAlpha',0.30, ...
-        'EdgeColor',[0.18 0.42 0.78],'LineWidth',2,'DisplayName','Achieved');
-    legend('Location','southoutside','FontSize',FS_G,'Orientation','horizontal','Box','on','NumColumns',2);
-    xlim([-1.45 1.45]); ylim([-1.55 1.45]);
-    title({'Key Performance Metrics — ML Self-Healing System', ...
-           sprintf('Overall Accuracy: %.1f%%  |  Macro F1: %.3f',R.acc*100,R.macro_f1)}, ...
-        'FontName',FN,'FontSize',FS_T,'FontWeight','bold');
-    savefig_ch('figures/ch6_conclusions/Fig6_2_performance_radar.png',fig);
-end
-
-%% Fig 6.3 — Future Work Roadmap
-fig=figure('Visible','on','Position',[50 50 FIG_W 500]);
-ax=axes; axis off; hold on; xlim([0 1]); ylim([0 1]);
-fw_titles={'NER-Limited Fault Currents','Sequence Component Features', ...
-    'Hardware-in-Loop Validation','Online / Adaptive Learning', ...
-    'Multi-Feeder Extension','Field Deployment Trial'};
-fw_subs={'(500-1000 \Omega ground resistance)','(I_0, I_1, I_2 symmetrical components)', ...
-    '(RTDS or Opal-RT platform)','(model updates with live data)', ...
-    '(meshed network topology)','(Zambian Copperbelt mine site)'};
-fw_x=[0.18,0.50,0.82,0.18,0.50,0.82];
-fw_y=[0.68,0.68,0.68,0.28,0.28,0.28];
-fw_clrs={[1.0 0.90 0.80],[1.0 0.90 0.80],[1.0 0.90 0.80], ...
-         [0.85 0.92 1.0],[0.85 0.92 1.0],[0.90 1.0 0.85]};
-for k=1:6
-    rectangle('Position',[fw_x(k)-0.14,fw_y(k)-0.13,0.28,0.26],'Curvature',0.2, ...
-        'FaceColor',fw_clrs{k},'EdgeColor',[0.4 0.4 0.4],'LineWidth',1.2);
-    text(fw_x(k),fw_y(k)+0.04,fw_titles{k},'HorizontalAlignment','center', ...
-        'FontName',FN,'FontSize',FS_A,'FontWeight','bold');
-    text(fw_x(k),fw_y(k)-0.05,fw_subs{k},'HorizontalAlignment','center', ...
-        'FontName',FN,'FontSize',FS_A);
-end
-plot([0.50 0.50],[0.55 0.42],'k-','LineWidth',1.5);
-plot(0.50,0.42,'kv','MarkerSize',7,'MarkerFaceColor','k');
-text(0.05,0.85,'Short term','FontName',FN,'FontSize',FS_A,'Color',[0.5 0.5 0.5],'FontAngle','italic');
-text(0.05,0.10,'Long term','FontName',FN,'FontSize',FS_A,'Color',[0.5 0.5 0.5],'FontAngle','italic');
-text(0.5,0.97,'Recommended Future Work — Research Extensions', ...
-    'HorizontalAlignment','center','FontName',FN,'FontWeight','bold','FontSize',FS_T+1);
-savefig_ch('figures/ch6_conclusions/Fig6_3_future_work_roadmap.png',fig);
-fprintf('  Chapter 6: 3 figures\n\n');
-
-
-%% ── Report copy ───────────────────────────────────────────────────────────
-for rpt = {'rf_metrics_report.txt','restoration_summary.txt','pipeline_log.txt'}
-    if exist(rpt{1},'file')
-        try; copyfile(rpt{1},['figures/reports/' rpt{1}]); catch; end
-    end
-end
-
-fprintf('=================================================================\n');
-fprintf('  MASTER C COMPLETE — ALL FIGURES GENERATED\n');
-fprintf('  figures/ch3_methodology/    8 figures\n');
-fprintf('  figures/ch4_system_design/  4 figures\n');
-fprintf('  figures/ch5_results/        14 figures\n');
-fprintf('  figures/ch6_conclusions/    3 figures\n');
-fprintf('  Total: 29 figures at 300 DPI, Arial font\n');
-fprintf('  Font sizes: title=%dpt  labels=%dpt  ticks=%dpt  annot=%dpt\n', ...
-    FS_T, FS_L, FS_K, FS_A);
-fprintf('=================================================================\n');
-
-
-%% =========================================================================
-%%  HELPER FUNCTIONS
-%% =========================================================================
-
-function savefig_ch(filepath, fig)
-    try
-        exportgraphics(fig, filepath, 'Resolution', 300);
-    catch
-        saveas(fig, filepath);
-    end
-    close(fig);
-    [~,fname,~] = fileparts(filepath);
-    fprintf('  Saved: %s\n', fname);
-end
-
-
-function draw_table(ax, col_hdr, row_lbl, data, font_name, fs_body)
-    axes(ax); axis off; hold on;
-    n_rows = length(row_lbl);
-    n_cols = length(col_hdr);
-    cw = 1/n_cols;
-    rh = 0.78/(n_rows+1);
-    y0 = 0.92;
-    hdr_clr  = [0.20 0.35 0.65];
-    row_clrs = {[0.94 0.96 1.00],[1.00 1.00 1.00]};
-    for c = 1:n_cols
-        x_ = (c-1)*cw;
-        rectangle('Position',[x_,y0-rh,cw,rh],'FaceColor',hdr_clr,'EdgeColor','w','LineWidth',1);
-        text(x_+cw/2,y0-rh/2,col_hdr{c},'HorizontalAlignment','center', ...
-            'FontName',font_name,'FontSize',fs_body+1,'FontWeight','bold','Color','w');
-    end
-    for r = 1:n_rows
-        y_ = y0-(r+1)*rh;
-        clr = row_clrs{mod(r,2)+1};
-        for c = 1:n_cols
-            x_ = (c-1)*cw;
-            rectangle('Position',[x_,y_,cw,rh],'FaceColor',clr, ...
-                'EdgeColor',[0.75 0.75 0.75],'LineWidth',0.5);
-            if c==1
-                txt=row_lbl{r}; fw='bold';
+    for r=1:2
+        for c=1:4
+            if isnan(M(r,c))
+                lab='N/A'; tc=[0.25 0.25 0.25];
             else
-                if iscell(data) && size(data,2)>=c-1
-                    txt=data{r,c-1};
-                else
-                    txt='';
-                end
-                fw='normal';
+                lab=sprintf('%d',M(r,c));
+                if M(r,c)>=0.55*maxVal; tc='w'; else; tc='k'; end
             end
-            text(x_+cw/2,y_+rh/2,txt,'HorizontalAlignment','center', ...
-                'FontName',font_name,'FontSize',fs_body,'FontWeight',fw,'Color',[0.1 0.1 0.1]);
+            text(ax,c,r,lab,'HorizontalAlignment','center', ...
+                'VerticalAlignment','middle','FontWeight','bold', ...
+                'FontSize',16,'Color',tc,'FontName','Times New Roman');
         end
     end
+
+    title(ax,'Healthy zones remaining de-energised after fault isolation', ...
+        'FontWeight','bold','FontSize',16);
+    text(ax,0.5,-0.23,'Load multiplier = 1.00; lower values indicate better service continuity', ...
+        'Units','normalized','HorizontalAlignment','center', ...
+        'FontAngle','italic','FontSize',10,'FontName','Times New Roman', ...
+        'Color',[0.30 0.30 0.30]);
+
+    exportgraphics(fig,fout,'Resolution',300);
+    close(fig);
+end
+function c = split_zones(s)
+    if isempty(s); c = {}; else; c = strsplit(char(s),'+')'; end
+    c = c(~cellfun(@isempty,c));
+end
+function draw_performance(OUT_ROOT, fout)
+% KPI summary derived only from saved model and restoration results.
+    acc=NaN;
+    try
+        S=load(fullfile(OUT_ROOT,'rf_model_v2.mat'));
+        if isfield(S,'acc'); acc=double(S.acc); end
+    catch
+    end
+
+    nTotal=0; nCorrect=0; nIsolated=0; nB45=0; nTieSafe=0; nRestored=0;
+    haveRestoration=false;
+    try
+        T=readtable(fullfile(OUT_ROOT,'restoration_results_v2.csv'));
+        haveRestoration=true;
+        nTotal=height(T);
+
+        pred=strtrim(upper(string(T.PredictionCorrect)));
+        nCorrect=sum(pred=="YES");
+
+        vFault=double(T.FaultBusVoltage_pu);
+        nIsolated=sum(vFault<0.8);
+
+        z=strtrim(upper(string(T.Zone)));
+        b45=ismember(z,["B4","B5"]);
+        nB45=sum(b45);
+        tie=strtrim(upper(string(T.TieState)));
+        nTieSafe=sum(tie(b45)=="OPEN");
+
+        status=strtrim(upper(string(T.Status)));
+        nRestored=sum(status=="RESTORED");
+    catch
+    end
+
+    if isfinite(acc)
+        if acc<=1.0; accPct=100*acc; else; accPct=acc; end
+        accValue=sprintf('%.2f%%',accPct);
+        accDetail='Independent test-set classification accuracy';
+        accState='info';
+    else
+        accValue='Unavailable';
+        accDetail='Run MASTER_B to generate rf_model_v2.mat';
+        accState='neutral';
+    end
+
+    if haveRestoration && nTotal>0
+        predValue=sprintf('%s  (%d/%d)',passfail(nCorrect==nTotal),nCorrect,nTotal);
+        isoValue=sprintf('%s  (%d/%d)',passfail(nIsolated==nTotal),nIsolated,nTotal);
+        if nB45>0
+            tieValue=sprintf('%s  (%d/%d)',passfail(nTieSafe==nB45),nTieSafe,nB45);
+        else
+            tieValue='N/A';
+        end
+        restValue=sprintf('%d/%d  (%.1f%%)',nRestored,nTotal,100*nRestored/nTotal);
+    else
+        predValue='Unavailable'; isoValue='Unavailable'; tieValue='Unavailable'; restValue='Unavailable';
+    end
+
+    metrics={ ...
+        'Test-set classification accuracy', accValue, accDetail, accState; ...
+        'Correct fault-zone prediction', predValue, 'All restoration scenarios', state_from_value(predValue); ...
+        'Faulted-zone isolation', isoValue, 'Fault-bus voltage below 0.80 pu', state_from_value(isoValue); ...
+        'Tie security for B4/B5 faults', tieValue, 'Tie remains open for terminal-zone faults', state_from_value(tieValue); ...
+        'Successful restoration actions', restValue, 'Scenarios ending with status RESTORED', 'info'};
+
+    fig=figure('Visible','off','Position',[40 40 1120 680],'Color','w');
+    ax=axes(fig,'Position',[0 0 1 1]); hold(ax,'on'); axis(ax,'off');
+    xlim(ax,[0 1]); ylim(ax,[0 1]);
+
+    text(ax,0.5,0.94,'Computed performance summary', ...
+        'HorizontalAlignment','center','FontWeight','bold', ...
+        'FontSize',22,'FontName','Times New Roman');
+    text(ax,0.5,0.895,'Results derived from rf_model_v2.mat and restoration_results_v2.csv', ...
+        'HorizontalAlignment','center','FontAngle','italic', ...
+        'FontSize',11,'FontName','Times New Roman','Color',[0.35 0.35 0.35]);
+
+    y0=0.77; dy=0.145;
+    for k=1:size(metrics,1)
+        y=y0-(k-1)*dy;
+        [face,edge,valcol]=status_colours(metrics{k,4});
+        rectangle(ax,'Position',[0.07 y-0.052 0.86 0.108], ...
+            'Curvature',[0.08 0.08],'FaceColor',face,'EdgeColor',edge,'LineWidth',1.2);
+        text(ax,0.10,y+0.018,metrics{k,1}, ...
+            'FontWeight','bold','FontSize',13,'FontName','Times New Roman', ...
+            'VerticalAlignment','middle');
+        text(ax,0.10,y-0.024,metrics{k,3}, ...
+            'FontSize',10,'FontName','Times New Roman', ...
+            'Color',[0.35 0.35 0.35],'VerticalAlignment','middle');
+        text(ax,0.89,y,metrics{k,2}, ...
+            'HorizontalAlignment','right','VerticalAlignment','middle', ...
+            'FontWeight','bold','FontSize',14,'FontName','Times New Roman', ...
+            'Color',valcol,'Interpreter','none');
+    end
+
+    text(ax,0.5,0.055,'PASS indicates that every evaluated scenario satisfied the stated criterion.', ...
+        'HorizontalAlignment','center','FontAngle','italic', ...
+        'FontSize',10,'FontName','Times New Roman','Color',[0.35 0.35 0.35]);
+
+    exportgraphics(fig,fout,'Resolution',300);
+    close(fig);
+end
+function s = passfail(b); if b; s='PASS'; else; s='FAIL'; end; end
+function s = table_text(T, varName, row)
+    s='';
+    if ~ismember(varName,T.Properties.VariableNames); return; end
+    raw=T.(varName)(row);
+    if iscell(raw); raw=raw{1}; end
+    if iscategorical(raw); raw=char(raw); end
+    if isstring(raw)
+        if ismissing(raw); return; end
+        raw=char(raw);
+    end
+    if isnumeric(raw)
+        if isempty(raw) || all(isnan(raw)); return; end
+        raw=num2str(raw);
+    end
+    s=strtrim(char(raw));
+end
+
+function st = state_from_value(v)
+    u=upper(string(v));
+    if startsWith(u,'PASS')
+        st='pass';
+    elseif startsWith(u,'FAIL')
+        st='fail';
+    else
+        st='neutral';
+    end
+end
+
+function [face,edge,valcol] = status_colours(st)
+    switch lower(char(st))
+        case 'pass'
+            face=[0.92 0.98 0.93]; edge=[0.25 0.62 0.31]; valcol=[0.10 0.45 0.18];
+        case 'fail'
+            face=[1.00 0.93 0.93]; edge=[0.78 0.25 0.25]; valcol=[0.65 0.08 0.08];
+        case 'info'
+            face=[0.93 0.96 1.00]; edge=[0.30 0.50 0.78]; valcol=[0.10 0.30 0.62];
+        otherwise
+            face=[0.96 0.96 0.96]; edge=[0.60 0.60 0.60]; valcol=[0.30 0.30 0.30];
+    end
+end
+
+% ----------------------------- parameter tables ---------------------------
+function rows = param_rows(MODEL, spec)
+    rows={};
+    for i=1:numel(spec)
+        blk=spec{i}{1}; if isempty(blk); continue; end
+        if ~contains(blk,'/'); blk=[MODEL '/' blk]; end
+        try mn=get_param(blk,'MaskNames'); catch; mn={}; end
+        wanted=spec{i}{2}; if isempty(wanted); wanted=mn; end
+        for j=1:numel(wanted)
+            if any(strcmp(mn,wanted{j}))
+                rows(end+1,:)={lastname(blk),wanted{j},tostr(get_param(blk,wanted{j}))}; %#ok<AGROW>
+            end
+        end
+    end
+end
+function rows = breaker_rows(BL, keys)
+    rows={};
+    for i=1:numel(keys)
+        if strcmp(keys{i},'TIE'); b=BL.cb.TIE; nm='TIE'; else; b=BL.cb.(keys{i}); nm=keys{i}; end
+        for pn={'InitialState','SwitchA','SwitchB','SwitchC','External','BreakerResistance'}
+            rows(end+1,:)={nm,pn{1},sgp(b,pn{1})}; %#ok<AGROW>
+        end
+    end
+end
+function rows = load_rows(BL)
+    rows={}; z={'B2','B3','B4','B5'};
+    for i=1:numel(z)
+        if ~isfield(BL.load,z{i}); continue; end
+        b=BL.load.(z{i});
+        rows(end+1,:)={['DL_' z{i}],'ActivePower(W)',sgp(b,'ActivePower')}; %#ok<AGROW>
+        rows(end+1,:)={['DL_' z{i}],'InductiveReactivePower(var)',sgp(b,'InductiveReactivePower')}; %#ok<AGROW>
+        rows(end+1,:)={['DL_' z{i}],'NominalVoltage(V)',sgp(b,'NominalVoltage')}; %#ok<AGROW>
+    end
+end
+
+function rows = fault_rows(BL)
+    rows={}; z={'B2','B3','B4','B5'};
+    for i=1:numel(z)
+        if ~isfield(BL.fault,z{i}); continue; end
+        b=BL.fault.(z{i});
+        for pn={'FaultResistance','GroundResistance','FaultA','FaultB','FaultC','GroundFault'}
+            rows(end+1,:)={['Fault_' z{i}],pn{1},sgp(b,pn{1})}; %#ok<AGROW>
+        end
+    end
+end
+
+function rows = line_rows(MODEL)
+    rows={}; want={'LINE_B1_B2','LINE_B1_B3','LINE_B1_B4','LINE_B5_TIE'};
+    for i=1:numel(want)
+        b=localget(MODEL,want{i});
+        if isempty(b); continue; end
+        for pn={'Frequency','Length','Resistance','Inductance'}
+            v=sgp(b,pn{1});
+            if ~strcmp(v,'(n/a)')
+                rows(end+1,:)={lastname(b),pn{1},v}; %#ok<AGROW>
+            end
+        end
+    end
+    if isempty(rows); rows={'LINE_*','(PI section line)','see model'}; end
+end
+
+function rows = rms_rows(MODEL)
+    rows={};
+    reps={{'RMS_V_B2','Voltage RMS blocks'},{'RMS_I_B2','Current RMS blocks'}};
+    wanted={'TrueRMS','Freq','RMSInit','Ts'};
+    for i=1:numel(reps)
+        b=localget(MODEL,reps{i}{1});
+        if isempty(b); continue; end
+        try
+            mn=get_param(b,'MaskNames');
+            for j=1:numel(wanted)
+                if any(strcmp(mn,wanted{j}))
+                    rows(end+1,:)={reps{i}{2},wanted{j},sgp(b,wanted{j})}; %#ok<AGROW>
+                end
+            end
+        catch
+        end
+    end
+    if isempty(rows); rows={'RMS blocks','Configuration','1-cycle fundamental-frequency RMS measurement'}; end
+end
+
+function rows = solver_rows(MODEL)
+    rows={};
+    for pn={'Solver','SolverType','StopTime','FixedStep','MaxStep','SimulationMode'}
+        rows(end+1,:)={'Model configuration',pn{1},tostr(get_param(MODEL,pn{1}))}; %#ok<AGROW>
+    end
+end
+
+function h=localget(MODEL,nm); h=find_system(MODEL,'SearchDepth',1,'Name',nm); if ~isempty(h); h=getfullname(h{1}); else; h=''; end; end
+function v=sgp(b,p); if isempty(b); v='(n/a)'; return; end; try v=get_param(b,p); catch; v='(n/a)'; end; if ~ischar(v); v=mat2str(v); end; end
+function s=lastname(b); parts=strsplit(b,'/'); s=regexprep(parts{end},'\s+',' '); end
+function s=tostr(v); if ischar(v); s=v; else; s=mat2str(v); end; end
+
+function table_figure(ttl, rows, fout)
+    rows = beautify_rows(rows);
+    rows = suppress_repeated_blocks(rows);
+    n=size(rows,1);
+
+    figH=max(420,140+28*(n+1));
+    fig=figure('Visible','off','Position',[40 40 1500 figH],'Color','w');
+    ax=axes(fig,'Position',[0 0 1 1]); axis(ax,'off');
+
+    text(ax,0.5,0.965,ttl,'HorizontalAlignment','center', ...
+        'FontWeight','bold','FontSize',19,'FontName','Times New Roman');
+    text(ax,0.5,0.93,'Parameters extracted directly from the Simulink model', ...
+        'HorizontalAlignment','center','FontAngle','italic', ...
+        'Color',[0.35 0.35 0.35],'FontSize',11,'FontName','Times New Roman');
+
+    bg=zeros(max(n,1),3);
+    for i=1:max(n,1)
+        if mod(i,2)==1
+            bg(i,:)=[0.980 0.988 0.998];
+        else
+            bg(i,:)=[0.945 0.965 0.990];
+        end
+    end
+
+    t=uitable(fig,'Data',rows, ...
+        'ColumnName',{'Block','Parameter','Value / setting'}, ...
+        'RowName',[], ...
+        'Units','normalized','Position',[0.02 0.035 0.96 0.86], ...
+        'ColumnWidth',{260 360 760}, ...
+        'FontName','Times New Roman','FontSize',11, ...
+        'BackgroundColor',bg,'ForegroundColor',[0 0 0]);
+    try, t.ColumnEditable=[false false false]; catch, end
+    try, t.ColumnFormat={'char','char','char'}; catch, end
+
+    exportgraphics(fig,fout,'Resolution',300);
+    close(fig);
+end
+
+function rows = beautify_rows(rows)
+    for i=1:size(rows,1)
+        blk = string(rows{i,1});
+        prm = string(rows{i,2});
+        val = string(rows{i,3});
+        rows{i,1} = char(pretty_block_name(blk));
+        rows{i,2} = char(pretty_param_name(prm));
+        rows{i,3} = char(pretty_value(prm,val));
+    end
+end
+
+function rows = suppress_repeated_blocks(rows)
+    last='';
+    for i=1:size(rows,1)
+        cur=string(rows{i,1});
+        if strcmp(cur,last)
+            rows{i,1}='';
+        else
+            last=cur;
+        end
+    end
+end
+
+function s = pretty_block_name(s)
+    s=strrep(string(s),'_','_');
+    s=replace(s,'Voltage RMS blocks','RMS voltage blocks');
+    s=replace(s,'Current RMS blocks','RMS current blocks');
+end
+
+function s = pretty_param_name(p)
+    p=string(p);
+    p=replace(p,'InternalConnection','Internal connection');
+    p=replace(p,'VoltagePhases','Voltage phases');
+    p=replace(p,'Voltage_phases','Per-phase voltage expression');
+    p=replace(p,'PhaseAngles_phases','Phase angles');
+    p=replace(p,'PhaseAngle','Phase angle');
+    p=replace(p,'ShortCircuitLevel','Short-circuit level');
+    p=replace(p,'BaseVoltage','Base voltage');
+    p=replace(p,'XRratio','X/R ratio');
+    p=replace(p,'BusType','Bus type');
+    p=replace(p,'Prefabc','Per-phase active power reference');
+    p=replace(p,'Qrefabc','Per-phase reactive power reference');
+    p=replace(p,'Winding1Connection','Winding 1 connection');
+    p=replace(p,'Winding2Connection','Winding 2 connection');
+    p=replace(p,'CoreType','Core type');
+    p=replace(p,'SetSaturation','Enable saturation');
+    p=replace(p,'SetInitialFlux','Set initial flux');
+    p=replace(p,'InitialFluxes','Initial fluxes');
+    p=replace(p,'NominalPower','Nominal power / frequency');
+    p=replace(p,'Measurements','Measurements');
+    p=replace(p,'BreakLoop','Break loop');
+    p=replace(p,'DiscreteSolver','Discrete solver');
+    p=replace(p,'TransfoNumber','Transformer number');
+    p=replace(p,'InitialState','Initial state');
+    p=replace(p,'SwitchA','Switch A');
+    p=replace(p,'SwitchB','Switch B');
+    p=replace(p,'SwitchC','Switch C');
+    p=replace(p,'External','External control');
+    p=replace(p,'BreakerResistance','Breaker resistance');
+    p=replace(p,'ActivePower(W)','Active power');
+    p=replace(p,'InductiveReactivePower(var)','Reactive power');
+    p=replace(p,'NominalVoltage(V)','Nominal voltage');
+    p=replace(p,'FaultResistance','Fault resistance');
+    p=replace(p,'GroundResistance','Ground resistance');
+    p=replace(p,'GroundFault','Ground fault');
+    p=replace(p,'Length','Length');
+    p=replace(p,'Freq','Fundamental frequency');
+    p=replace(p,'RMSInit','Initial RMS output');
+    p=replace(p,'Ts','Sample time');
+    p=replace(p,'StopTime','Stop time');
+    p=replace(p,'FixedStep','Fixed-step size');
+    p=replace(p,'MaxStep','Maximum step size');
+    p=replace(p,'SimulationMode','Simulation mode');
+    p=replace(p,'SolverType','Solver type');
+end
+
+function s = pretty_value(p, v)
+    p=char(string(p));
+    s=char(string(v));
+    s=strtrim(s);
+    if isempty(s)
+        s='-'; return;
+    end
+    if strcmpi(s,'(n/a)')
+        s='Not specified'; return;
+    end
+    switch lower(s)
+        case 'on',     s='On'; return;
+        case 'off',    s='Off'; return;
+        case 'open',   s='Open'; return;
+        case 'closed', s='Closed'; return;
+        case 'swing',  s='Swing'; return;
+        case 'inf',    s='+Inf'; return;
+        case '-inf',   s='-Inf'; return;
+    end
+
+    num=str2double(s);
+    if ~isnan(num)
+        lp=lower(regexprep(p,'[^a-zA-Z]',''));
+        if contains(lp,'frequency') || strcmpi(p,'Freq')
+            s=sprintf('%g Hz',num); return;
+        elseif contains(lp,'length')
+            s=sprintf('%.2f km',num); return;
+        elseif contains(lp,'activepower')
+            s=sprintf('%.3f MW',num/1e6); return;
+        elseif contains(lp,'reactivepower')
+            s=sprintf('%.3f MVAr',num/1e6); return;
+        elseif contains(lp,'shortcircuitlevel')
+            s=sprintf('%.0f MVA',num/1e6); return;
+        elseif contains(lp,'nominalvoltage') || contains(lp,'basevoltage') || strcmpi(p,'Voltage')
+            s=sprintf('%.3g kV',num/1e3); return;
+        elseif contains(lp,'resistance')
+            s=sprintf('%.4g Ω',num); return;
+        elseif contains(lp,'inductance') || strcmpi(p,'Lm') || strcmpi(p,'L0')
+            s=sprintf('%.4g H',num); return;
+        elseif strcmpi(p,'StopTime') || strcmpi(p,'FixedStep') || strcmpi(p,'MaxStep') || strcmpi(p,'Ts')
+            s=sprintf('%g s',num); return;
+        elseif strcmpi(p,'PhaseAngle')
+            s=sprintf('%g°',num); return;
+        elseif strcmpi(p,'RMSInit')
+            s=sprintf('%g',num); return;
+        end
+    end
+
+    if strcmpi(p,'NominalPower')
+        a=sscanf(strrep(strrep(s,'[',''),']',''),'%f');
+        if numel(a)>=2
+            s=sprintf('%.0f MVA, %.0f Hz',a(1)/1e6,a(2));
+            return;
+        end
+    end
+    if strcmpi(p,'Winding1') || strcmpi(p,'Winding2')
+        a=sscanf(strrep(strrep(s,'[',''),']',''),'%f');
+        if numel(a)>=3
+            s=sprintf('[Vn, R, L] = [%.0f kV, %.4f pu, %.4f pu]',a(1)/1e3,a(2),a(3));
+            return;
+        end
+    end
+
+    s = regexprep(s,'\s+',' ');
+end
+
+function scope_fig(sOut, Vc, Ic, label, cond, fout)
+    fig=figure('Visible','off','Position',[40 40 920 640],'Color','w');
+    subplot(2,1,1); M=getM(sOut,Vc); plot(M(:,1),M(:,2:4),'LineWidth',1.1); grid on; box on;
+    ylabel('RMS voltage (V)'); legend({'A','B','C'},'Location','best');
+    title(sprintf('%s — %s: RMS voltage', cond, label));
+    subplot(2,1,2); M=getM(sOut,Ic); plot(M(:,1),M(:,2:4),'LineWidth',1.1); grid on; box on;
+    ylabel('RMS current (A)'); xlabel('Time (s)'); legend({'A','B','C'},'Location','best');
+    title(sprintf('%s — %s: RMS current', cond, label));
+    exportgraphics(fig,fout,'Resolution',200); close(fig);
+end
+function signature_fig(dfile, kind, fout)
+    S=load(dfile); X=S.X; y=S.y; names=S.featNames;
+    idx = find(startsWith(names, [kind '_']));      % V_* or I_*
+    cls=0:12; M=zeros(13,numel(idx));
+    for c=cls
+        M(c+1,:)=mean(X(y==c,idx),1);
+    end
+
+    % Use the healthy class as the per-feature reference.
+    ref=M(1,:);
+    ref(abs(ref)<1e-9)=1e-9;
+
+    if strcmpi(kind,'V')
+        H=100*(1-M./ref);
+        ttl='Voltage sag relative to the healthy operating point';
+        cbtxt='Voltage sag (%)';
+    else
+        H=M./ref;
+        ttl='RMS current relative to the healthy operating point';
+        cbtxt='Current ratio (x healthy)';
+    end
+
+    fig=figure('Visible','off','Position',[40 40 1180 650],'Color','w');
+    ax=axes(fig);
+    imagesc(ax,H);
+    colormap(ax,parula);
+    cb=colorbar(ax);
+    cb.Label.String=cbtxt;
+
+    lo=min(H(:)); hi=max(H(:));
+    if strcmpi(kind,'V') && lo>0; lo=0; end
+    if hi<=lo; hi=lo+1; end
+    caxis(ax,[lo hi]);
+
+    set(ax,'YTick',1:13,'YTickLabel',S.CLASS_NAMES, ...
+        'XTick',1:numel(idx),'XTickLabel',names(idx), ...
+        'XTickLabelRotation',45,'FontSize',9, ...
+        'TickLabelInterpreter','none','FontName','Times New Roman', ...
+        'Layer','top','Box','on');
+
+    hold(ax,'on');
+    for x=[3.5 6.5 9.5]
+        xline(ax,x,'k-','LineWidth',0.7);
+    end
+
+    title(ax,ttl,'FontWeight','bold');
+    xlabel(ax,'Measured feature');
+    ylabel(ax,'Fault class');
+    exportgraphics(fig,fout,'Resolution',300);
+    close(fig);
+end
+function plot_fault_restoration(W, fout)
+    Vf=W.Vf; If=W.If; Vpu=W.Vpu; VBAND=W.VBAND;
+
+    % Vf and If are stored as [time, channel-1, channel-2, channel-3].
+    % Plot one representative disturbed-voltage trace instead of sending the
+    % complete Nx3 voltage matrix to plot(). Because RMS_V is line-to-line,
+    % the minimum of the three channels is the clearest single fault-severity
+    % indicator for SLG, LL and 3PH cases.
+    Vfault_kV = min(Vf(:,2:4),[],2)/1000;
+    Ia_A      = If(:,2);
+
+    fig=figure('Visible','off','Position',[40 40 1000 740],'Color','w');
+
+    ax1=subplot(2,1,1);
+    yyaxis(ax1,'left');
+    hV=plot(ax1,Vf(:,1),Vfault_kV,'-','LineWidth',1.3);
+    ylabel(ax1,'Minimum line-to-line RMS voltage (kV)');
+
+    yyaxis(ax1,'right');
+    hI=plot(ax1,If(:,1),Ia_A,'-','LineWidth',1.3);
+    ylabel(ax1,'Faulted-bus RMS I_A (A)');
+
+    grid(ax1,'on'); box(ax1,'on'); xlabel(ax1,'Time (s)');
+    legend(ax1,[hV hI],{'Minimum V_{LL,RMS}','I_{A,RMS}'},'Location','best');
+
+    if isfield(W,'predZone')
+        title(ax1,sprintf('Stage 1 — %s fault at %s (normal network, tie open) | RF predicted: %s', ...
+            W.ftype, W.zone, W.predZone));
+    else
+        title(ax1,sprintf('Stage 1 — %s fault at %s (normal network, tie open)', W.ftype, W.zone));
+    end
+
+    ax2=subplot(2,1,2); hold(ax2,'on'); box(ax2,'on'); grid(ax2,'on');
+    busn={'B2','B3','B4','B5'}; cols=lines(4);
+    for b=1:4
+        plot(ax2,Vpu.(busn{b})(:,1),Vpu.(busn{b})(:,2),'-', ...
+            'Color',cols(b,:),'LineWidth',1.2);
+    end
+    yline(ax2,VBAND(1),'r--'); yline(ax2,VBAND(2),'r--'); ylim(ax2,[0 1.15]);
+    xlabel(ax2,'Time (s)'); ylabel(ax2,'Bus voltage (pu)');
+    legend(ax2,[busn {'0.95 pu','1.05 pu'}],'Location','eastoutside');
+    title(ax2,sprintf('Stage 2 — after isolation (%s) + tie %s : %s   [isolated=%s, restored=%s]', ...
+        strjoin(W.brk,'+'), tern2(W.tieClosed,'CLOSED','OPEN'), W.status, W.zone, ...
+        tern2(isempty(W.restored),'(none)',strjoin(W.restored,'+'))), 'Interpreter','none');
+
+    exportgraphics(fig,fout,'Resolution',200); close(fig);
+end
+function s=tern2(c,a,b); if c; s=a; else; s=b; end; end
+
+% ------------------------------- ML plots ---------------------------------
+function plot_confusion(Cm, names, fout)
+    rowTotal=sum(Cm,2);
+    rowTotal(rowTotal==0)=1;
+    Cpct=100*(Cm./rowTotal);
+    overall=100*sum(diag(Cm))/max(sum(Cm(:)),1);
+
+    fig=figure('Visible','off','Position',[40 40 940 760],'Color','w');
+    ax=axes(fig);
+    imagesc(ax,Cpct,[0 100]);
+    colormap(ax,parula);
+    cb=colorbar(ax);
+    cb.Label.String='Row-normalised classification rate (%)';
+
+    axis(ax,'square');
+    set(ax,'XTick',1:numel(names),'XTickLabel',names, ...
+        'XTickLabelRotation',45,'YTick',1:numel(names), ...
+        'YTickLabel',names,'FontSize',9,'FontName','Times New Roman', ...
+        'TickLabelInterpreter','none','Layer','top','Box','on');
+
+    for i=1:size(Cm,1)
+        for j=1:size(Cm,2)
+            if Cm(i,j)>0
+                if Cpct(i,j)>=55; tc='w'; else; tc='k'; end
+                text(ax,j,i,sprintf('%d\n%.1f%%',Cm(i,j),Cpct(i,j)), ...
+                    'HorizontalAlignment','center','VerticalAlignment','middle', ...
+                    'FontSize',8,'FontWeight','bold','Color',tc, ...
+                    'FontName','Times New Roman');
+            end
+        end
+    end
+
+    title(ax,sprintf('Test-set confusion matrix — overall accuracy %.2f%%',overall), ...
+        'FontWeight','bold');
+    xlabel(ax,'Predicted class');
+    ylabel(ax,'True class');
+    exportgraphics(fig,fout,'Resolution',300);
+    close(fig);
+end
+function plot_prf_from_cm(Cm, names, fout)
+    n=size(Cm,1); P=zeros(n,1); R=zeros(n,1); F=zeros(n,1);
+    for i=1:n
+        tp=Cm(i,i); fp=sum(Cm(:,i))-tp; fn=sum(Cm(i,:))-tp;
+        P(i)=tp/max(tp+fp,eps);
+        R(i)=tp/max(tp+fn,eps);
+        F(i)=2*P(i)*R(i)/max(P(i)+R(i),eps);
+    end
+    Q=[P R F];
+
+    fig=figure('Visible','off','Position',[40 40 820 700],'Color','w');
+    ax=axes(fig);
+    imagesc(ax,Q,[0 1]);
+    colormap(ax,parula);
+    cb=colorbar(ax);
+    cb.Label.String='Metric value';
+
+    set(ax,'XTick',1:3,'XTickLabel',{'Precision','Recall','F1-score'}, ...
+        'YTick',1:n,'YTickLabel',names,'FontSize',9, ...
+        'FontName','Times New Roman','TickLabelInterpreter','none', ...
+        'Layer','top','Box','on');
+
+    for i=1:n
+        for j=1:3
+            if Q(i,j)>=0.55; tc='w'; else; tc='k'; end
+            text(ax,j,i,sprintf('%.3f',Q(i,j)), ...
+                'HorizontalAlignment','center','FontSize',8, ...
+                'FontWeight','bold','Color',tc,'FontName','Times New Roman');
+        end
+    end
+
+    title(ax,'Per-class precision, recall and F1-score','FontWeight','bold');
+    xlabel(ax,'Performance metric');
+    ylabel(ax,'Class');
+    exportgraphics(fig,fout,'Resolution',300);
+    close(fig);
+end
+function plot_importance(imp, names, fout)
+    [s,ord]=sort(imp(:),'ascend');
+    orderedNames=names(ord);
+
+    fig=figure('Visible','off','Position',[40 40 900 720],'Color','w');
+    ax=axes(fig);
+    barh(ax,s,0.72);
+    grid(ax,'on'); box(ax,'on');
+
+    set(ax,'YTick',1:numel(orderedNames),'YTickLabel',orderedNames, ...
+        'FontSize',9,'FontName','Times New Roman', ...
+        'TickLabelInterpreter','none','Layer','top');
+
+    xmax=max(s);
+    if xmax<=0; xmax=1; end
+    xlim(ax,[0 1.16*xmax]);
+
+    for k=1:numel(s)
+        text(ax,s(k)+0.015*xmax,k,sprintf('%.3f',s(k)), ...
+            'VerticalAlignment','middle','FontSize',8, ...
+            'FontName','Times New Roman');
+    end
+
+    xlabel(ax,'Increase in OOB error after feature permutation');
+    ylabel(ax,'Input feature');
+    title(ax,'Random Forest OOB permutation feature importance (sorted)', ...
+        'FontWeight','bold');
+    exportgraphics(fig,fout,'Resolution',300);
+    close(fig);
+end
+function plot_curve(v, xl, yl, ttl, fout)
+    v=v(:); n=numel(v);
+    tol=1e-12;
+    lastNonZero=find(v>tol,1,'last');
+    if isempty(lastNonZero)
+        convTree=1;
+    elseif lastNonZero<n
+        convTree=lastNonZero+1;
+    else
+        convTree=NaN;
+    end
+
+    fig=figure('Visible','off','Position',[40 40 900 520],'Color','w');
+    ax=axes(fig);
+    plot(ax,1:n,v,'LineWidth',1.6);
+    grid(ax,'on'); box(ax,'on');
+    xlabel(ax,xl); ylabel(ax,yl);
+    title(ax,ttl,'FontWeight','bold');
+    set(ax,'FontName','Times New Roman','FontSize',10,'Layer','top');
+
+    ymax=max(v);
+    if ymax<=0; ymax=1; end
+    ylim(ax,[0 1.08*ymax]);
+    xlim(ax,[1 max(n,2)]);
+
+    if ~isnan(convTree)
+        xline(ax,convTree,'--','LineWidth',1.0);
+        convText=sprintf('Sustained zero OOB error from tree %d',convTree);
+    else
+        convText='OOB error did not remain at zero';
+    end
+    text(ax,0.98,0.92,sprintf('Final OOB error: %.4f\n%s',v(end),convText), ...
+        'Units','normalized','HorizontalAlignment','right', ...
+        'VerticalAlignment','top','FontSize',9, ...
+        'BackgroundColor','w','Margin',5,'FontName','Times New Roman');
+
+    % Inset shows the rapid early convergence while retaining all trees.
+    if isnan(convTree)
+        zoomN=min(n,60);
+    else
+        zoomN=min(n,max(40,convTree+10));
+    end
+    ax2=axes(fig,'Position',[0.54 0.46 0.34 0.31]);
+    plot(ax2,1:zoomN,v(1:zoomN),'LineWidth',1.3);
+    grid(ax2,'on'); box(ax2,'on');
+    xlim(ax2,[1 max(zoomN,2)]);
+    zy=max(v(1:zoomN)); if zy<=0; zy=1; end
+    ylim(ax2,[0 1.08*zy]);
+    title(ax2,sprintf('Early convergence: first %d trees',zoomN), ...
+        'FontSize',9,'FontWeight','normal');
+    xlabel(ax2,'Trees','FontSize',8);
+    ylabel(ax2,'OOB error','FontSize',8);
+    set(ax2,'FontName','Times New Roman','FontSize',8,'Layer','top');
+
+    exportgraphics(fig,fout,'Resolution',300);
+    close(fig);
+end
+function plot_cv(cvACC, fout)
+    pct=100*cvACC(:);
+    folds=(1:numel(pct))';
+
+    fig=figure('Visible','off','Position',[40 40 720 480],'Color','w');
+    ax=axes(fig);
+    bar(ax,folds,pct,0.58);
+    grid(ax,'on'); box(ax,'on');
+    ylim(ax,[0 105]);
+    xlim(ax,[0.4 numel(pct)+0.6]);
+    set(ax,'XTick',folds,'FontName','Times New Roman', ...
+        'FontSize',10,'Layer','top');
+
+    m=mean(pct);
+    yline(ax,m,'--','LineWidth',1.1);
+    for k=1:numel(pct)
+        text(ax,k,pct(k)+1.2,sprintf('%.2f%%',pct(k)), ...
+            'HorizontalAlignment','center','FontSize',9, ...
+            'FontName','Times New Roman');
+    end
+
+    xlabel(ax,'Cross-validation fold');
+    ylabel(ax,'Accuracy (%)');
+    title(ax,sprintf('Five-fold cross-validation accuracy — mean %.2f%%',m), ...
+        'FontWeight','bold');
+    exportgraphics(fig,fout,'Resolution',300);
+    close(fig);
+end
+function plot_restoration_summary(Rt, fout)
+    st=strtrim(string(Rt.Status));
+    available=unique(st,'stable');
+    preferred=["RESTORED";"ISOLATED_NO_TIE";"BLOCKED_BY_CAPACITY"; ...
+               "MISPREDICTED_WRONG_ACTION";"ERROR"];
+
+    ordered=strings(0,1);
+    for k=1:numel(preferred)
+        if any(st==preferred(k))
+            ordered(end+1,1)=preferred(k); %#ok<AGROW>
+        end
+    end
+    extras=available(~ismember(available,ordered));
+    ordered=[ordered; extras];
+
+    counts=zeros(numel(ordered),1);
+    labels=cell(numel(ordered),1);
+    for k=1:numel(ordered)
+        counts(k)=sum(st==ordered(k));
+        labels{k}=pretty_status(ordered(k));
+    end
+
+    fig=figure('Visible','off','Position',[40 40 900 500],'Color','w');
+    ax=axes(fig);
+    bar(ax,1:numel(counts),counts,0.58);
+    grid(ax,'on'); box(ax,'on');
+
+    total=max(sum(counts),1);
+    ymax=max(counts);
+    if ymax<=0; ymax=1; end
+    ylim(ax,[0 ymax+max(1,0.18*ymax)]);
+    xlim(ax,[0.4 numel(counts)+0.6]);
+
+    set(ax,'XTick',1:numel(counts),'XTickLabel',labels, ...
+        'XTickLabelRotation',15,'TickLabelInterpreter','none', ...
+        'FontName','Times New Roman','FontSize',10,'Layer','top');
+
+    for k=1:numel(counts)
+        text(ax,k,counts(k)+0.04*ymax, ...
+            sprintf('%d (%.1f%%)',counts(k),100*counts(k)/total), ...
+            'HorizontalAlignment','center','FontWeight','bold', ...
+            'FontSize',9,'FontName','Times New Roman');
+    end
+
+    ylabel(ax,'Number of evaluated scenarios');
+    title(ax,'Restoration decision outcomes','FontWeight','bold');
+    exportgraphics(fig,fout,'Resolution',300);
+    close(fig);
+end
+function plot_post_restoration_v(Rt, fout)
+% Plot every restored BUS voltage individually. This avoids averaging B3 and
+% B4 together for a B2 fault and prevents multi-value CSV cells from being
+% silently omitted.
+    st=strtrim(string(Rt.Status));
+    idx=find(st=="RESTORED");
+    vals=[]; labs={};
+
+    for k=1:numel(idx)
+        i=idx(k);
+
+        raw=Rt.RestoredVoltages_pu(i);
+        if iscell(raw); raw=raw{1}; end
+        if iscategorical(raw); raw=char(raw); end
+        if isstring(raw)
+            if ismissing(raw); raw=''; else; raw=char(raw); end
+        end
+        if isnumeric(raw)
+            if isempty(raw) || all(isnan(raw)); raw=''; else; raw=num2str(raw); end
+        end
+
+        v=sscanf(regexprep(char(raw),'[^0-9.eE+\-]',' '),'%f').';
+        if isempty(v); continue; end
+
+        rz=Rt.RestoredZones(i);
+        if iscell(rz); rz=rz{1}; end
+        if iscategorical(rz); rz=char(rz); end
+        rz=char(string(rz));
+        restoredZones=regexp(rz,'B[2-5]','match');
+
+        fz=Rt.Zone(i);
+        if iscell(fz); fz=fz{1}; end
+        if iscategorical(fz); fz=char(fz); end
+        fz=char(string(fz));
+        lm=Rt.LoadMult(i);
+
+        for j=1:numel(v)
+            vals(end+1)=v(j); %#ok<AGROW>
+            if j<=numel(restoredZones)
+                target=restoredZones{j};
+            else
+                target=sprintf('bus%d',j);
+            end
+            labs{end+1}=sprintf('%s -> %s @ %.2f pu load',fz,target,lm); %#ok<AGROW>
+        end
+    end
+
+    fig=figure('Visible','off','Position',[40 40 1120 520],'Color','w');
+    ax=axes(fig); hold(ax,'on'); grid(ax,'on'); box(ax,'on');
+
+    if ~isempty(vals)
+        x=1:numel(vals);
+        for k=1:numel(vals)
+            plot(ax,[x(k) x(k)],[1.0 vals(k)],'-','LineWidth',1.0);
+        end
+        h=plot(ax,x,vals,'o','LineStyle','none','MarkerSize',8,'LineWidth',1.5);
+        hNom=yline(ax,1.00,'k:','LineWidth',1.1);
+        hLow=yline(ax,0.95,'r--','LineWidth',1.0);
+        yline(ax,1.05,'r--','LineWidth',1.0);
+
+        lo=min([0.94 vals-0.008]);
+        hi=max([1.06 vals+0.008]);
+        ylim(ax,[lo hi]);
+        xlim(ax,[0.5 numel(vals)+0.5]);
+
+        set(ax,'XTick',x,'XTickLabel',labs,'XTickLabelRotation',28, ...
+            'TickLabelInterpreter','none');
+
+        for k=1:numel(vals)
+            text(ax,k,vals(k)+0.002,sprintf('%.3f',vals(k)), ...
+                'HorizontalAlignment','center','FontSize',8, ...
+                'FontName','Times New Roman');
+        end
+        legend(ax,[h hNom hLow], ...
+            {'Restored bus voltage','Nominal voltage','Acceptance limits'}, ...
+            'Location','best');
+    else
+        yline(ax,0.95,'r--'); yline(ax,1.05,'r--');
+        text(ax,0.5,0.5,'No successful RESTORED cases were found', ...
+            'Units','normalized','HorizontalAlignment','center');
+        ylim(ax,[0.9 1.1]);
+    end
+
+    set(ax,'FontName','Times New Roman','FontSize',9,'Layer','top');
+    ylabel(ax,'Post-restoration bus voltage (pu)');
+    xlabel(ax,'Fault scenario, restored bus and load multiplier');
+    title(ax,'Post-restoration voltages for successful restoration actions', ...
+        'FontWeight','bold');
+    exportgraphics(fig,fout,'Resolution',300);
+    close(fig);
+end
+function s=pretty_status(st)
+    switch char(st)
+        case 'RESTORED'
+            s='Restored';
+        case 'ISOLATED_NO_TIE'
+            s='Isolated (tie not required)';
+        case 'BLOCKED_BY_CAPACITY'
+            s='Tie closure blocked by capacity';
+        case 'MISPREDICTED_WRONG_ACTION'
+            s='Mispredicted / wrong action';
+        case 'ERROR'
+            s='Simulation error';
+        otherwise
+            s=strrep(char(st),'_',' ');
+    end
+end
+
+function BL = discover_blocks(MODEL)
+    z={'B2','B3','B4','B5'};
+    fc={{'Fault_B2'},{'Fault_B3'},{'Fault_B4'},{'Fault_B5','Fault_SXEW'}};
+    lc={{'DL_B2'},{'DL_B3'},{'DL_B4'},{'DL_B5','DL_SXEW'}};
+    for k=1:4; BL.fault.(z{k})=pick(MODEL,fc{k},'Reference'); BL.load.(z{k})=pick(MODEL,lc{k},'Reference'); end
+    BL.cb.CB_MAIN   =pick(MODEL,{'CB_MAIN','CB_BUS1_B2'},'Reference');
+    BL.cb.CB_BUS1_B3=pick(MODEL,{'CB_BUS1_B3'},'Reference');
+    BL.cb.CB_BUS1_B4=pick(MODEL,{'CB_BUS1_B4'},'Reference');
+    BL.cb.CB_T2_BUS5=pick(MODEL,{'CB_T2_BUS5'},'Reference');
+    BL.cb.TIE       =pick(MODEL,{'TIE_SWITCH','TIE_B4_B5'},'Reference');
+    BL.ctrl.CB_MAIN   =pick_ctrl(MODEL,{'CB_MAIN','CB_BUS1_B2'});
+    BL.ctrl.CB_BUS1_B3=pick_ctrl(MODEL,{'CB_BUS1_B3'});
+    BL.ctrl.CB_BUS1_B4=pick_ctrl(MODEL,{'CB_BUS1_B4'});
+    BL.ctrl.CB_T2_BUS5=pick_ctrl(MODEL,{'CB_T2_BUS5'});
+    BL.ctrl.TIE       =pick_ctrl(MODEL,{'TIE_B4_B5','TIE'});
+end
+function p=pick(MODEL,cands,bt)
+    p='';
+    for i=1:numel(cands); nm=cands{i}; if isempty(nm); continue; end
+        h=find_system(MODEL,'SearchDepth',1,'BlockType',bt,'Name',nm);
+        if isempty(h); h=find_system(MODEL,'SearchDepth',1,'RegExp','on','Name', ...
+            ['^' regexprep(regexptranslate('escape',nm),'\s+','\\s+') '$']); end
+        if ~isempty(h); p=getfullname(h{1}); return; end
+    end
+    error('pick:notfound','none of: %s',strjoin(cands,', '));
+end
+function p=pick_ctrl(MODEL,cands)
+    cs=find_system(MODEL,'SearchDepth',1,'BlockType','Constant');
+    for j=1:numel(cands)
+        for i=1:numel(cs); nm=regexprep(get_param(cs{i},'Name'),'\s+',' ');
+            if contains(nm,cands{j}); p=getfullname(cs{i}); return; end; end
+    end
+    error('pick_ctrl:notfound','no Constant matching %s',strjoin(cands,', '));
+end
+function set_switch(ctrl,closed); set_param(ctrl,'Value',num2str(double(logical(closed)))); end
+function set_normal_state(BL)
+    set_switch(BL.ctrl.CB_MAIN,true); set_switch(BL.ctrl.CB_BUS1_B3,true);
+    set_switch(BL.ctrl.CB_BUS1_B4,true); set_switch(BL.ctrl.CB_T2_BUS5,true);
+    set_switch(BL.ctrl.TIE,false);
+end
+function clear_all_faults(BL)
+    z=fieldnames(BL.fault);
+    for k=1:numel(z); set_param(BL.fault.(z{k}),'FaultA','off','FaultB','off','FaultC','off', ...
+        'GroundFault','off','SwitchTimes','[1000000 1000001]','InitialStates','0'); end
+end
+function set_loads(BL,lm)
+    z=fieldnames(BL.load);
+    for k=1:numel(z); b=BL.load.(z{k});
+        for pn={'ActivePower','InductiveReactivePower'}
+            try mn=get_param(b,'MaskNames');
+                if any(strcmp(mn,pn{1}))
+                    ud=get_param(b,'UserData'); key=matlab.lang.makeValidName(pn{1});
+                    if ~isstruct(ud)||~isfield(ud,key); base=str2double(get_param(b,pn{1}));
+                        if ~isstruct(ud); ud=struct(); end; ud.(key)=base; set_param(b,'UserData',ud);
+                    else; base=ud.(key); end
+                    set_param(b,pn{1},num2str(base*lm));
+                end
+            catch; end
+        end
+    end
+end
+function s=simrun(MODEL)
+    set_param(MODEL,'StopTime','2.0');
+    s=sim(MODEL,'SimulationMode','normal','FastRestart','off','SaveOutput','on','SaveTime','on', ...
+        'SignalLogging','on','SignalLoggingName','logsout','SaveFormat','Dataset');
+end
+function M=getM(sOut,cands)
+    if ischar(cands); cands={cands}; end
+    s=[];
+    for i=1:numel(cands)
+        try, s=sOut.get(cands{i}); catch, s=[]; end
+        if isempty(s) && evalin('base',['exist(''' cands{i} ''',''var'')']); s=evalin('base',cands{i}); end
+        if ~isempty(s); break; end
+    end
+    if isstruct(s)&&isfield(s,'signals'); t=s.time; val=s.signals.values;
+    elseif isa(s,'timeseries'); t=s.Time; val=s.Data;
+    else; error('getM:fmt','cannot read any of %s',strjoin(cands,',')); end
+    if size(val,2)<3; val=repmat(val(:,1),1,3); end
+    M=[t(:),val(:,1:3)];
 end

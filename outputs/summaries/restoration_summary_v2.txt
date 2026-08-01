@@ -1,0 +1,30 @@
+RESTORATION SUMMARY (v2) — conditional, topology-limited
+Generated: 11-Jul-2026 08:11:33
+
+Tie policy: closed only for upstream faults (B2, B3) when the T2 capacity and
+0.95-1.05 pu voltage checks pass. For B4 and B5 faults the tie is kept OPEN by
+design, because closing it would backfeed the faulted zone; the healthy buses
+listed under RemainsOnT1 never lose supply (they stay on the T1 main path).
+Full restoration of all healthy buses is NOT claimed for every fault location.
+
+CLOSED LOOP: every switching decision below was driven by the RF
+prediction computed from Stage-1 measurements on the normal network,
+never by the known injected zone.
+
+Zone  LoadMlt  Pred      OK    Status                   Isolated  Tie       TieRestored  RemainsOnT1 
+B2    0.70     B2        YES   RESTORED                 B2        CLOSED    B3+B4                    
+B2    1.00     B2        YES   RESTORED                 B2        CLOSED    B3+B4                    
+B2    1.30     B2        YES   RESTORED                 B2        CLOSED    B3+B4                    
+B3    0.70     B3        YES   RESTORED                 B3        CLOSED    B4           B2          
+B3    1.00     B3        YES   RESTORED                 B3        CLOSED    B4           B2          
+B3    1.30     B3        YES   RESTORED                 B3        CLOSED    B4           B2          
+B4    0.70     B4        YES   ISOLATED_NO_TIE          B4        OPEN                   B2+B3       
+B4    1.00     B4        YES   ISOLATED_NO_TIE          B4        OPEN                   B2+B3       
+B4    1.30     B4        YES   ISOLATED_NO_TIE          B4        OPEN                   B2+B3       
+B5    0.70     B5        YES   ISOLATED_NO_TIE          B5        OPEN                   B2+B3+B4    
+B5    1.00     B5        YES   ISOLATED_NO_TIE          B5        OPEN                   B2+B3+B4    
+B5    1.30     B5        YES   ISOLATED_NO_TIE          B5        OPEN                   B2+B3+B4    
+
+CHECK: RF predicted the correct zone in every case : PASS
+CHECK: faulted zone isolated in every case         : PASS
+CHECK: tie never CLOSED for B4/B5 faults           : PASS

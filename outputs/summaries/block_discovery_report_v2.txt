@@ -1,0 +1,41 @@
+BLOCK DISCOVERY REPORT (v2)
+Model: mining_feeder_layer_FINAL_baseline
+Generated: 10-Jul-2026 08:01:25
+
+== FAULT BLOCKS ==
+  B2           : mining_feeder_layer_FINAL_baseline/Fault_B2
+  B3           : mining_feeder_layer_FINAL_baseline/Fault_B3
+  B4           : mining_feeder_layer_FINAL_baseline/Fault_B4
+  B5           : mining_feeder_layer_FINAL_baseline/Fault_B5
+
+== LOAD BLOCKS ==
+  B2           : mining_feeder_layer_FINAL_baseline/DL_B2
+  B3           : mining_feeder_layer_FINAL_baseline/DL_B3
+  B4           : mining_feeder_layer_FINAL_baseline/DL_B4
+  B5           : mining_feeder_layer_FINAL_baseline/DL_B5
+
+== MEASUREMENTS ==
+  B2           : mining_feeder_layer_FINAL_baseline/Measurement DL_B2
+  B3           : mining_feeder_layer_FINAL_baseline/Measurement DL_B3
+  B4           : mining_feeder_layer_FINAL_baseline/Measurement DL_B4
+  B5           : mining_feeder_layer_FINAL_baseline/Measurement DL_B5
+
+== BREAKERS ==
+  CB_MAIN      : mining_feeder_layer_FINAL_baseline/CB_MAIN
+  CB_BUS1_B3   : mining_feeder_layer_FINAL_baseline/CB_BUS1_B3
+  CB_BUS1_B4   : mining_feeder_layer_FINAL_baseline/CB_BUS1_B4
+  CB_T2_BUS5   : mining_feeder_layer_FINAL_baseline/CB_T2_BUS5
+  TIE_SWITCH   : mining_feeder_layer_FINAL_baseline/TIE_SWITCH
+
+== CONTROL CONSTANTS ==
+  CB_MAIN      : mining_feeder_layer_FINAL_baseline/Constant
+CB_MAIN
+  CB_BUS1_B3   : mining_feeder_layer_FINAL_baseline/Constant
+CB_BUS1_B3
+  CB_BUS1_B4   : mining_feeder_layer_FINAL_baseline/Constant
+CB_BUS1_B4
+  CB_T2_BUS5   : mining_feeder_layer_FINAL_baseline/Constant
+CB_T2_BUS5
+  TIE          : mining_feeder_layer_FINAL_baseline/Constant
+TIE_B4_B5
+
