@@ -119,3 +119,43 @@ Provenance is labelled in `PROJECT_TIMELINE_EVIDENCE.csv`: **Jul 2025 – Feb 20
 1. **2025 evidence?** If the project genuinely started in 2025, please point me to any 2025 file/export; otherwise the Gantt will show the verified 2026-03 → 2026-08 span.
 2. **Model file load reset** — shall I reset the saved `.slx` loads from the stale 1.20× back to nominal? (No thesis change; improves repo reproducibility.)
 3. **Stage 5 content changes** (Gantt chart, PC/MATLAB reproducibility detail, any table cross-checks) require your go-ahead per item.
+
+---
+
+# PART 2 — Editing & Formatting Revision (CORRECTED_FINAL)
+
+Covers the full editing/polish brief, executed on a copy of the verified thesis.
+
+- **Source thesis edited:** `Chimundu_VCC_BEng_Thesis_FINAL.docx` (newest/fullest, confirmed).
+- **Output created:** `Chimundu_VCC_BEng_Thesis_CORRECTED_FINAL.docx` and `Chimundu_VCC_BEng_Thesis_CORRECTED_FINAL.pdf` (in `Project matlab/scripts/`).
+- **Untouched backup:** `Chimundu_VCC_BEng_Thesis_ORIGINAL_BACKUP.docx` (+ `..._backup_prePagination.docx` before the numbering step).
+- **Final page count:** **74** — `PAGE LIMIT CHECK: PASS — 74/76`.
+- **Preliminary-page numbering:** lowercase Roman; **title page = i, no visible number**; Declaration ii → Nomenclature xv, all **bottom-centre PAGE fields**.
+- **Chapter 1 starts at Arabic page 1:** YES (Next Page section break inserted; Arabic restarts at 1, continues through References/Appendices).
+- **Table of Contents:** automatic Word TOC field, **updated** (entire table) — shows Roman prelims + Arabic body, includes all new headings.
+- **List of Figures:** updated (Figure C.1 added). **List of Tables:** updated (Tables A.3, C.1, C.2 added). **List of Equations:** **added** (Equation 3.1–3.15). **Nomenclature:** improved from "List of Abbreviations and Symbols" → **Nomenclature / A. Abbreviations / B. Symbols** (no duplication).
+- **Gantt chart:** Appendix B, Figure B.1 (referenced from §3.1).
+- **Cost analysis:** §4.7.3 + **Appendix C, Table C.1** (indicative budgetary, ~USD 84,650 capital, labelled estimates not quotes).
+- **Risk assessment:** §4.7.4 + **Appendix C, Table C.2** (fail-safe design, 9 risks).
+- **Industrial-architecture figure:** **Appendix C, Figure C.1** (grayscale; conventional relays = independent primary fail-safe; operator approval; IEC 61850 marked proposed).
+- **Hardware/software table:** **Appendix A, Table A.3** (verified dev environment; separate from deployment hardware).
+- **Standards section:** §4.7.5 (IEC 60255, IEC 61850, IEEE C37) with explicit "no compliance/certification claim."
+- **Engineering Contributions:** **§6.6** (Chapter 6 renumbered; nine actual contributions).
+- **Limitations:** three bullets added (communications/cyber-security; ideal breaker/tie actuation; missing/corrupted data) — existing limitations preserved.
+- **References audit:** in-text citations [1]–[27]; reference list [1]–[27] complete; no cited-but-missing entry; standards [25]–[27] added and cited.
+- **Appendix changes:** A (Code/Data/Reproducibility) preserved + Table A.3 added; B (Gantt); **C (new — deployment architecture, cost, risk).**
+- **MATLAB consistency:** every parameter table verified MATCH (Part 1 audit).
+- **Unresolved contradictions:** none (the stale-load model-file item was corrected in Part 1).
+- **Word fields updated:** YES (all story fields + TOC, entire table). **PDF export:** SUCCEEDED.
+- **Terminology preserved:** "thesis" retained (not changed to capstone/project); author/title/supervisor/institution details unchanged.
+- **Not automatable / manual note:** the List of Equations follows the caption-only convention of the existing LoF/LoT (equations use native OMML numbering, not SEQ caption fields, so a live page-number field is not available without reformatting every equation — a deliberate, low-risk choice).
+
+## Part 2 addendum — author-directed removal (post-review)
+
+At the author's decision after review, the following were **removed** (judged thin/redundant with the strong original §4.7 paragraph): §4.7.1–4.7.5 subsections, Appendix C (deployment-architecture figure, cost table, risk table), the standards discussion (§4.7.5) and its references [25]–[27]. The **original §4.7 "Practical Deployment Considerations" paragraph is retained**. References revert to [1]–[24]. Final page count after removal: **70 / 76 (PASS)**; pagination and all other additions (Nomenclature, List of Equations, Table A.3 hardware/software, §6.6 Engineering Contributions, expanded limitations, Roman/Arabic numbering) are intact.
+
+**Flagged consequence:** the supervisor's explicit request for implementation costs is not addressed in this version; a compact cost element can be re-added on request. Backup preserving the fuller version: `..._backup_preStrip.docx`.
+
+## Part 2 addendum — reference audit (DOIs verified against Crossref)
+
+No unused references (all [1]–[24] cited). Four DOIs were wrong and corrected to verified real papers: [6] (404/fabricated → repointed to Wu et al. 2025, ICSECE, 10.1109/ICSECE65727.2025.11256887), [8] (→ 10.1109/TPWRS.2024.3447533), [10] (→ 10.1016/j.advengsoft.2022.103279, art. 103279), [16] (→ 10.1016/j.epsr.2022.108031, EPSR 209, 2022). The remaining six DOIs verified correct.
