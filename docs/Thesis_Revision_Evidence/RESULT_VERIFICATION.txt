@@ -1,0 +1,40 @@
+RESULT VERIFICATION  (non-destructive)
+Generated: 2026-08-07
+Method: values re-read from saved result files and this session's non-destructive runs.
+No result file was overwritten; the master scripts were NOT re-run (verification used the
+existing saved outputs + a fresh in-session run of BASELINE_RULE_VS_RF, which only reads).
+
+VALUE                         THESIS      IMPLEMENTATION / SAVED RESULT           SOURCE                              STATUS
+-----------------------------------------------------------------------------------------------------------------------------
+Healthy Ia B2                 103.7 A     103.7 A                                 slg_preflight_check_v2.txt          MATCH
+Healthy Ia B3                 137.1 A     137.1 A                                 slg_preflight_check_v2.txt          MATCH
+Healthy Ia B4                 170.6 A     170.6 A                                 slg_preflight_check_v2.txt          MATCH
+Healthy Ia B5                 115.8 A     115.8 A                                 slg_preflight_check_v2.txt          MATCH
+Analytical FLC vs sim         +0 to +2.8% same (Table 4.10)                       load-flow validation table         MATCH
+Healthy bus voltages          0.977-0.986 within 0.95-1.05 band (Table 5.1)       healthy RMS summary                MATCH
+SLG fault currents            27-75x      B2 74.7x/B3 41.9x/B4 27.2x/B5 58.4x     slg_preflight_check_v2.txt          MATCH
+Dataset size                  1000        1000 (900 fault + 100 healthy)          MASTER_A grid; 200 test @20%       MATCH
+Feature count                 24          24 (3-phase RMS V+I x 4 buses)          feature vector x                    MATCH
+Class count                   13          13 (0 Healthy + 12 fault)               dataset labels                     MATCH
+Train/test split              80/20       60/15 per fault class, 80/20 healthy    Table 3.3 + cvpartition rng42      MATCH
+Fault resistance sweep        0.001-5.0   FAULT_RF=[0.001 0.1 0.5 1.0 5.0]        MASTER_A line 57                   MATCH
+Load multiplier sweep         5 levels    FAULT_LM=[0.70 0.85 1.00 1.10 1.30]     MASTER_A line 58                   MATCH
+Onset-time sweep              3 levels    FAULT_TON=[0.50 0.75 1.00]              MASTER_A line 59                   MATCH
+Random Forest trees           500         TreeBagger(500,...)                     MASTER_B line 81                   MATCH
+Features sampled / split      floor(v24)=4 TreeBagger default (sqrt p)            MASTER_B (default)                 MATCH
+OOB error + importance        Enabled     'OOBPrediction','on','OOBPredictorImportance','on'  MASTER_B line 82       MATCH
+Misclassification cost        12.5x       Cost C, fault->Healthy = 12.5           MASTER_B + report line 426         MATCH
+Random seed                   rng(42)     rng(42)                                 MASTER_B line 32                   MATCH
+Test accuracy                 100%        100% (0 missed)                         confusion_v2 + ablation summary    MATCH
+Cost ablation                 0 missed both 0 missed (std & cost-sensitive)       ablation_cost_sensitivity_v2.txt   MATCH
+5-fold cross-validation       Fig 5.10    TreeBagger(500) per fold                MASTER_B line 101                  MATCH
+Noise robustness              100->94.6%  same table (0 missed to 10% noise)      noise_robustness_v2 + Table 5.8    MATCH
+Off-grid interpolation        72/72       72/72                                   interpolation summary + Table 5.9  MATCH
+Rule-based baseline           99.5/100/100 99.5% rule / 100% tree / 100% RF       BASELINE_RULE_VS_RF (this sess.)   MATCH
+Restoration eligibility       B2,B3 restored / B4,B5 isolated                     restoration_results_v2 + policy    MATCH
+Post-restoration Vpost        0.963-0.981 same (Table 5.4)                        restoration_results_v2.csv         MATCH
+Breaker/tie switching logic   zone->breaker policy                               BUILD_FDIR_CONTROLLER policy()     MATCH
+
+DISCREPANCIES DISCOVERED: none in the reported results.
+UNRESOLVED ITEMS: none. (One model-file hygiene item -- stale 1.20x load state -- was found during the
+                  parameter audit and corrected; it did not affect any reported result, which used nominal loads.)

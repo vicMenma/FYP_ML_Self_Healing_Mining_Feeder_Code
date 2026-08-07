@@ -1,0 +1,685 @@
+Category,Block,Parameter,Value
+Source,33KV_Source,RTWMemSecFuncInitTerm,Inherit from model
+Source,33KV_Source,RTWMemSecFuncExecute,Inherit from model
+Source,33KV_Source,RTWMemSecDataConstants,Inherit from model
+Source,33KV_Source,RTWMemSecDataInternal,Inherit from model
+Source,33KV_Source,RTWMemSecDataParameters,Inherit from model
+Source,33KV_Source,ContentPreviewEnabled,on
+Source,33KV_Source,InternalConnection,Yg
+Source,33KV_Source,VoltagePhases,off
+Source,33KV_Source,Voltage,33e3
+Source,33KV_Source,PhaseAngle,0
+Source,33KV_Source,Voltage_phases,[25e3 25e3 25e3]/sqrt(3)
+Source,33KV_Source,PhaseAngles_phases,[0 -120 +120]
+Source,33KV_Source,Frequency,50
+Source,33KV_Source,NonIdealSource,on
+Source,33KV_Source,SpecifyImpedance,on
+Source,33KV_Source,Resistance,0.8929
+Source,33KV_Source,Inductance,16.58e-3
+Source,33KV_Source,ShortCircuitLevel,500e6
+Source,33KV_Source,BaseVoltage,33e3
+Source,33KV_Source,XRratio,10
+Source,33KV_Source,BusType,swing
+Source,33KV_Source,Pref,10e3
+Source,33KV_Source,Qref,0
+Source,33KV_Source,Prefabc,"[10e3, 10e3, 10e3]"
+Source,33KV_Source,Qrefabc,"[0, 0, 0]"
+Source,33KV_Source,Qmin,-inf
+Source,33KV_Source,Qmax,inf
+Breaker,CB_BUS1_B3,RTWMemSecFuncInitTerm,Inherit from model
+Breaker,CB_BUS1_B3,RTWMemSecFuncExecute,Inherit from model
+Breaker,CB_BUS1_B3,RTWMemSecDataConstants,Inherit from model
+Breaker,CB_BUS1_B3,RTWMemSecDataInternal,Inherit from model
+Breaker,CB_BUS1_B3,RTWMemSecDataParameters,Inherit from model
+Breaker,CB_BUS1_B3,ContentPreviewEnabled,on
+Breaker,CB_BUS1_B3,InitialState,closed
+Breaker,CB_BUS1_B3,SwitchA,on
+Breaker,CB_BUS1_B3,SwitchB,on
+Breaker,CB_BUS1_B3,SwitchC,on
+Breaker,CB_BUS1_B3,SwitchTimes,[1000000 1000001]
+Breaker,CB_BUS1_B3,External,on
+Breaker,CB_BUS1_B3,BreakerResistance,0.01
+Breaker,CB_BUS1_B3,SnubberResistance,1e5
+Breaker,CB_BUS1_B3,SnubberCapacitance,1e-9
+Breaker,CB_BUS1_B3,Measurements,None
+Breaker,CB_BUS1_B4,RTWMemSecFuncInitTerm,Inherit from model
+Breaker,CB_BUS1_B4,RTWMemSecFuncExecute,Inherit from model
+Breaker,CB_BUS1_B4,RTWMemSecDataConstants,Inherit from model
+Breaker,CB_BUS1_B4,RTWMemSecDataInternal,Inherit from model
+Breaker,CB_BUS1_B4,RTWMemSecDataParameters,Inherit from model
+Breaker,CB_BUS1_B4,ContentPreviewEnabled,on
+Breaker,CB_BUS1_B4,InitialState,closed
+Breaker,CB_BUS1_B4,SwitchA,on
+Breaker,CB_BUS1_B4,SwitchB,on
+Breaker,CB_BUS1_B4,SwitchC,on
+Breaker,CB_BUS1_B4,SwitchTimes,[1000000 1000001]
+Breaker,CB_BUS1_B4,External,on
+Breaker,CB_BUS1_B4,BreakerResistance,0.01
+Breaker,CB_BUS1_B4,SnubberResistance,1e5
+Breaker,CB_BUS1_B4,SnubberCapacitance,1e-9
+Breaker,CB_BUS1_B4,Measurements,None
+Breaker,CB_MAIN,RTWMemSecFuncInitTerm,Inherit from model
+Breaker,CB_MAIN,RTWMemSecFuncExecute,Inherit from model
+Breaker,CB_MAIN,RTWMemSecDataConstants,Inherit from model
+Breaker,CB_MAIN,RTWMemSecDataInternal,Inherit from model
+Breaker,CB_MAIN,RTWMemSecDataParameters,Inherit from model
+Breaker,CB_MAIN,ContentPreviewEnabled,on
+Breaker,CB_MAIN,InitialState,closed
+Breaker,CB_MAIN,SwitchA,on
+Breaker,CB_MAIN,SwitchB,on
+Breaker,CB_MAIN,SwitchC,on
+Breaker,CB_MAIN,SwitchTimes,[1000000 1000001]
+Breaker,CB_MAIN,External,on
+Breaker,CB_MAIN,BreakerResistance,0.01
+Breaker,CB_MAIN,SnubberResistance,1e6
+Breaker,CB_MAIN,SnubberCapacitance,inf
+Breaker,CB_MAIN,Measurements,None
+Breaker,CB_T2_BUS5,RTWMemSecFuncInitTerm,Inherit from model
+Breaker,CB_T2_BUS5,RTWMemSecFuncExecute,Inherit from model
+Breaker,CB_T2_BUS5,RTWMemSecDataConstants,Inherit from model
+Breaker,CB_T2_BUS5,RTWMemSecDataInternal,Inherit from model
+Breaker,CB_T2_BUS5,RTWMemSecDataParameters,Inherit from model
+Breaker,CB_T2_BUS5,ContentPreviewEnabled,on
+Breaker,CB_T2_BUS5,InitialState,closed
+Breaker,CB_T2_BUS5,SwitchA,on
+Breaker,CB_T2_BUS5,SwitchB,on
+Breaker,CB_T2_BUS5,SwitchC,on
+Breaker,CB_T2_BUS5,SwitchTimes,[1000000 1000001]
+Breaker,CB_T2_BUS5,External,on
+Breaker,CB_T2_BUS5,BreakerResistance,0.01
+Breaker,CB_T2_BUS5,SnubberResistance,1e5
+Breaker,CB_T2_BUS5,SnubberCapacitance,1e-9
+Breaker,CB_T2_BUS5,Measurements,None
+Load,DL_B2,LConnTagsString,A|B|C
+Load,DL_B2,Configuration,Y (grounded)
+Load,DL_B2,NominalVoltage,11e3
+Load,DL_B2,Vabc,[1e3 1e3 1e3]
+Load,DL_B2,Vabcp,[1e3 1e3 1e3]
+Load,DL_B2,NominalFrequency,50
+Load,DL_B2,UnbalancedPower,off
+Load,DL_B2,ActivePower,2340000
+Load,DL_B2,InductivePower,572000
+Load,DL_B2,CapacitivePower,0
+Load,DL_B2,Pabc,[10e3 9e3 11e3]
+Load,DL_B2,QLabc,[100 90 110]
+Load,DL_B2,QCabc,[100 90 110]
+Load,DL_B2,Pabcp,[10e3 9e3 11e3]
+Load,DL_B2,QLabcp,[100 90 110]
+Load,DL_B2,QCabcp,[100 90 110]
+Load,DL_B2,Measurements,None
+Load,DL_B2,LoadType,constant Z
+Load,DL_B3,LConnTagsString,A|B|C
+Load,DL_B3,Configuration,Y (grounded)
+Load,DL_B3,NominalVoltage,11e3
+Load,DL_B3,Vabc,[1e3 1e3 1e3]
+Load,DL_B3,Vabcp,[1e3 1e3 1e3]
+Load,DL_B3,NominalFrequency,50
+Load,DL_B3,UnbalancedPower,off
+Load,DL_B3,ActivePower,3120000
+Load,DL_B3,InductivePower,767000
+Load,DL_B3,CapacitivePower,0
+Load,DL_B3,Pabc,[10e3 9e3 11e3]
+Load,DL_B3,QLabc,[100 90 110]
+Load,DL_B3,QCabc,[100 90 110]
+Load,DL_B3,Pabcp,[10e3 9e3 11e3]
+Load,DL_B3,QLabcp,[100 90 110]
+Load,DL_B3,QCabcp,[100 90 110]
+Load,DL_B3,Measurements,None
+Load,DL_B3,LoadType,constant Z
+Load,DL_B4,LConnTagsString,A|B|C
+Load,DL_B4,Configuration,Y (grounded)
+Load,DL_B4,NominalVoltage,11e3
+Load,DL_B4,Vabc,[1e3 1e3 1e3]
+Load,DL_B4,Vabcp,[1e3 1e3 1e3]
+Load,DL_B4,NominalFrequency,50
+Load,DL_B4,UnbalancedPower,off
+Load,DL_B4,ActivePower,3900000
+Load,DL_B4,InductivePower,962000
+Load,DL_B4,CapacitivePower,0
+Load,DL_B4,Pabc,[10e3 9e3 11e3]
+Load,DL_B4,QLabc,[100 90 110]
+Load,DL_B4,QCabc,[100 90 110]
+Load,DL_B4,Pabcp,[10e3 9e3 11e3]
+Load,DL_B4,QLabcp,[100 90 110]
+Load,DL_B4,QCabcp,[100 90 110]
+Load,DL_B4,Measurements,None
+Load,DL_B4,LoadType,constant Z
+Load,DL_B5,LConnTagsString,A|B|C
+Load,DL_B5,Configuration,Y (grounded)
+Load,DL_B5,NominalVoltage,11e3
+Load,DL_B5,Vabc,[1e3 1e3 1e3]
+Load,DL_B5,Vabcp,[1e3 1e3 1e3]
+Load,DL_B5,NominalFrequency,50
+Load,DL_B5,UnbalancedPower,off
+Load,DL_B5,ActivePower,2574000
+Load,DL_B5,InductivePower,637000
+Load,DL_B5,CapacitivePower,0
+Load,DL_B5,Pabc,[10e3 9e3 11e3]
+Load,DL_B5,QLabc,[100 90 110]
+Load,DL_B5,QCabc,[100 90 110]
+Load,DL_B5,Pabcp,[10e3 9e3 11e3]
+Load,DL_B5,QLabcp,[100 90 110]
+Load,DL_B5,QCabcp,[100 90 110]
+Load,DL_B5,Measurements,None
+Load,DL_B5,LoadType,constant Z
+Fault,Fault_B2,RTWMemSecFuncInitTerm,Inherit from model
+Fault,Fault_B2,RTWMemSecFuncExecute,Inherit from model
+Fault,Fault_B2,RTWMemSecDataConstants,Inherit from model
+Fault,Fault_B2,RTWMemSecDataInternal,Inherit from model
+Fault,Fault_B2,RTWMemSecDataParameters,Inherit from model
+Fault,Fault_B2,ContentPreviewEnabled,on
+Fault,Fault_B2,InitialStates,0
+Fault,Fault_B2,FaultA,off
+Fault,Fault_B2,FaultB,off
+Fault,Fault_B2,FaultC,off
+Fault,Fault_B2,GroundFault,off
+Fault,Fault_B2,SwitchTimes,[1000000 1000001]
+Fault,Fault_B2,External,off
+Fault,Fault_B2,SwitchStatus,NaN
+Fault,Fault_B2,FaultResistance,0.001
+Fault,Fault_B2,GroundResistance,0.001
+Fault,Fault_B2,SnubberResistance,1e5
+Fault,Fault_B2,SnubberCapacitance,1e-9
+Fault,Fault_B2,Measurements,None
+Fault,Fault_B3,RTWMemSecFuncInitTerm,Inherit from model
+Fault,Fault_B3,RTWMemSecFuncExecute,Inherit from model
+Fault,Fault_B3,RTWMemSecDataConstants,Inherit from model
+Fault,Fault_B3,RTWMemSecDataInternal,Inherit from model
+Fault,Fault_B3,RTWMemSecDataParameters,Inherit from model
+Fault,Fault_B3,ContentPreviewEnabled,on
+Fault,Fault_B3,InitialStates,0
+Fault,Fault_B3,FaultA,off
+Fault,Fault_B3,FaultB,off
+Fault,Fault_B3,FaultC,off
+Fault,Fault_B3,GroundFault,off
+Fault,Fault_B3,SwitchTimes,[1000000 1000001]
+Fault,Fault_B3,External,off
+Fault,Fault_B3,SwitchStatus,NaN
+Fault,Fault_B3,FaultResistance,0.001
+Fault,Fault_B3,GroundResistance,0.001
+Fault,Fault_B3,SnubberResistance,1e5
+Fault,Fault_B3,SnubberCapacitance,1e-9
+Fault,Fault_B3,Measurements,None
+Fault,Fault_B4,RTWMemSecFuncInitTerm,Inherit from model
+Fault,Fault_B4,RTWMemSecFuncExecute,Inherit from model
+Fault,Fault_B4,RTWMemSecDataConstants,Inherit from model
+Fault,Fault_B4,RTWMemSecDataInternal,Inherit from model
+Fault,Fault_B4,RTWMemSecDataParameters,Inherit from model
+Fault,Fault_B4,ContentPreviewEnabled,on
+Fault,Fault_B4,InitialStates,0
+Fault,Fault_B4,FaultA,off
+Fault,Fault_B4,FaultB,off
+Fault,Fault_B4,FaultC,off
+Fault,Fault_B4,GroundFault,off
+Fault,Fault_B4,SwitchTimes,[1000000 1000001]
+Fault,Fault_B4,External,off
+Fault,Fault_B4,SwitchStatus,NaN
+Fault,Fault_B4,FaultResistance,0.001
+Fault,Fault_B4,GroundResistance,0.001
+Fault,Fault_B4,SnubberResistance,1e5
+Fault,Fault_B4,SnubberCapacitance,1e-9
+Fault,Fault_B4,Measurements,None
+Fault,Fault_B5,RTWMemSecFuncInitTerm,Inherit from model
+Fault,Fault_B5,RTWMemSecFuncExecute,Inherit from model
+Fault,Fault_B5,RTWMemSecDataConstants,Inherit from model
+Fault,Fault_B5,RTWMemSecDataInternal,Inherit from model
+Fault,Fault_B5,RTWMemSecDataParameters,Inherit from model
+Fault,Fault_B5,ContentPreviewEnabled,on
+Fault,Fault_B5,InitialStates,0
+Fault,Fault_B5,FaultA,off
+Fault,Fault_B5,FaultB,off
+Fault,Fault_B5,FaultC,off
+Fault,Fault_B5,GroundFault,off
+Fault,Fault_B5,SwitchTimes,[1000000 1000001]
+Fault,Fault_B5,External,off
+Fault,Fault_B5,SwitchStatus,NaN
+Fault,Fault_B5,FaultResistance,0.001
+Fault,Fault_B5,GroundResistance,0.001
+Fault,Fault_B5,SnubberResistance,1e5
+Fault,Fault_B5,SnubberCapacitance,1e-9
+Fault,Fault_B5,Measurements,None
+Line,LINE_B1_B2,LConnTagsString,a|b|c
+Line,LINE_B1_B2,RConnTagsString,A|B|C
+Line,LINE_B1_B2,Length,0.8
+Line,LINE_B1_B2,Frequency,50
+Line,LINE_B1_B2,Resistances,[0.12 0.36]
+Line,LINE_B1_B2,Inductances,[0.35e-3 1.05e-3]
+Line,LINE_B1_B2,Capacitances,[0.20e-6 0.10e-6]
+Line,LINE_B1_B3,LConnTagsString,a|b|c
+Line,LINE_B1_B3,RConnTagsString,A|B|C
+Line,LINE_B1_B3,Length,1.2
+Line,LINE_B1_B3,Frequency,50
+Line,LINE_B1_B3,Resistances,[0.12 0.36]
+Line,LINE_B1_B3,Inductances,[0.35e-3 1.05e-3]
+Line,LINE_B1_B3,Capacitances,[0.20e-6 0.10e-6]
+Line,LINE_B1_B4,LConnTagsString,a|b|c
+Line,LINE_B1_B4,RConnTagsString,A|B|C
+Line,LINE_B1_B4,Length,1.0
+Line,LINE_B1_B4,Frequency,50
+Line,LINE_B1_B4,Resistances,[0.12 0.36]
+Line,LINE_B1_B4,Inductances,[0.35e-3 1.05e-3]
+Line,LINE_B1_B4,Capacitances,[0.20e-6 0.10e-6]
+TieSwitch,LINE_B5_TIE,LConnTagsString,a|b|c
+TieSwitch,LINE_B5_TIE,RConnTagsString,A|B|C
+TieSwitch,LINE_B5_TIE,Length,0.6
+TieSwitch,LINE_B5_TIE,Frequency,50
+TieSwitch,LINE_B5_TIE,Resistances,[0.12 0.36]
+TieSwitch,LINE_B5_TIE,Inductances,[0.35e-3 1.05e-3]
+TieSwitch,LINE_B5_TIE,Capacitances,[0.20e-6 0.10e-6]
+Measurement,Measurement DL_B2,RTWMemSecFuncInitTerm,Inherit from model
+Measurement,Measurement DL_B2,RTWMemSecFuncExecute,Inherit from model
+Measurement,Measurement DL_B2,RTWMemSecDataConstants,Inherit from model
+Measurement,Measurement DL_B2,RTWMemSecDataInternal,Inherit from model
+Measurement,Measurement DL_B2,RTWMemSecDataParameters,Inherit from model
+Measurement,Measurement DL_B2,ContentPreviewEnabled,on
+Measurement,Measurement DL_B2,VoltageMeasurement,phase-to-phase
+Measurement,Measurement DL_B2,SetLabelV,off
+Measurement,Measurement DL_B2,LabelV,Vabc
+Measurement,Measurement DL_B2,Vpu,off
+Measurement,Measurement DL_B2,VpuLL,off
+Measurement,Measurement DL_B2,CurrentMeasurement,yes
+Measurement,Measurement DL_B2,SetLabelI,off
+Measurement,Measurement DL_B2,LabelI,Iabc
+Measurement,Measurement DL_B2,Ipu,off
+Measurement,Measurement DL_B2,Pbase,100e6
+Measurement,Measurement DL_B2,Vbase,500e3
+Measurement,Measurement DL_B2,OutputType,Complex
+Measurement,Measurement DL_B2,PhasorSimulation,off
+Measurement,Measurement DL_B2,PSBequivalent,0
+Measurement,Measurement DL_B3,RTWMemSecFuncInitTerm,Inherit from model
+Measurement,Measurement DL_B3,RTWMemSecFuncExecute,Inherit from model
+Measurement,Measurement DL_B3,RTWMemSecDataConstants,Inherit from model
+Measurement,Measurement DL_B3,RTWMemSecDataInternal,Inherit from model
+Measurement,Measurement DL_B3,RTWMemSecDataParameters,Inherit from model
+Measurement,Measurement DL_B3,ContentPreviewEnabled,on
+Measurement,Measurement DL_B3,VoltageMeasurement,phase-to-phase
+Measurement,Measurement DL_B3,SetLabelV,off
+Measurement,Measurement DL_B3,LabelV,Vabc
+Measurement,Measurement DL_B3,Vpu,off
+Measurement,Measurement DL_B3,VpuLL,off
+Measurement,Measurement DL_B3,CurrentMeasurement,yes
+Measurement,Measurement DL_B3,SetLabelI,off
+Measurement,Measurement DL_B3,LabelI,Iabc
+Measurement,Measurement DL_B3,Ipu,off
+Measurement,Measurement DL_B3,Pbase,100e6
+Measurement,Measurement DL_B3,Vbase,500e3
+Measurement,Measurement DL_B3,OutputType,Complex
+Measurement,Measurement DL_B3,PhasorSimulation,off
+Measurement,Measurement DL_B3,PSBequivalent,0
+Measurement,Measurement DL_B4,RTWMemSecFuncInitTerm,Inherit from model
+Measurement,Measurement DL_B4,RTWMemSecFuncExecute,Inherit from model
+Measurement,Measurement DL_B4,RTWMemSecDataConstants,Inherit from model
+Measurement,Measurement DL_B4,RTWMemSecDataInternal,Inherit from model
+Measurement,Measurement DL_B4,RTWMemSecDataParameters,Inherit from model
+Measurement,Measurement DL_B4,ContentPreviewEnabled,on
+Measurement,Measurement DL_B4,VoltageMeasurement,phase-to-phase
+Measurement,Measurement DL_B4,SetLabelV,off
+Measurement,Measurement DL_B4,LabelV,Vabc
+Measurement,Measurement DL_B4,Vpu,off
+Measurement,Measurement DL_B4,VpuLL,off
+Measurement,Measurement DL_B4,CurrentMeasurement,yes
+Measurement,Measurement DL_B4,SetLabelI,off
+Measurement,Measurement DL_B4,LabelI,Iabc
+Measurement,Measurement DL_B4,Ipu,off
+Measurement,Measurement DL_B4,Pbase,100e6
+Measurement,Measurement DL_B4,Vbase,500e3
+Measurement,Measurement DL_B4,OutputType,Complex
+Measurement,Measurement DL_B4,PhasorSimulation,off
+Measurement,Measurement DL_B4,PSBequivalent,0
+Measurement,Measurement DL_B5,RTWMemSecFuncInitTerm,Inherit from model
+Measurement,Measurement DL_B5,RTWMemSecFuncExecute,Inherit from model
+Measurement,Measurement DL_B5,RTWMemSecDataConstants,Inherit from model
+Measurement,Measurement DL_B5,RTWMemSecDataInternal,Inherit from model
+Measurement,Measurement DL_B5,RTWMemSecDataParameters,Inherit from model
+Measurement,Measurement DL_B5,ContentPreviewEnabled,on
+Measurement,Measurement DL_B5,VoltageMeasurement,phase-to-phase
+Measurement,Measurement DL_B5,SetLabelV,off
+Measurement,Measurement DL_B5,LabelV,Vabc
+Measurement,Measurement DL_B5,Vpu,off
+Measurement,Measurement DL_B5,VpuLL,off
+Measurement,Measurement DL_B5,CurrentMeasurement,yes
+Measurement,Measurement DL_B5,SetLabelI,off
+Measurement,Measurement DL_B5,LabelI,Iabc
+Measurement,Measurement DL_B5,Ipu,off
+Measurement,Measurement DL_B5,Pbase,100e6
+Measurement,Measurement DL_B5,Vbase,500e3
+Measurement,Measurement DL_B5,OutputType,Complex
+Measurement,Measurement DL_B5,PhasorSimulation,off
+Measurement,Measurement DL_B5,PSBequivalent,0
+Measurement,RMS_I_33KV_Source,RTWMemSecFuncInitTerm,Inherit from model
+Measurement,RMS_I_33KV_Source,RTWMemSecFuncExecute,Inherit from model
+Measurement,RMS_I_33KV_Source,RTWMemSecDataConstants,Inherit from model
+Measurement,RMS_I_33KV_Source,RTWMemSecDataInternal,Inherit from model
+Measurement,RMS_I_33KV_Source,RTWMemSecDataParameters,Inherit from model
+Measurement,RMS_I_33KV_Source,ContentPreviewEnabled,on
+Measurement,RMS_I_33KV_Source,TrueRMS,on
+Measurement,RMS_I_33KV_Source,Freq,50
+Measurement,RMS_I_33KV_Source,RMSInit,0
+Measurement,RMS_I_33KV_Source,Ts,0.0001
+Measurement,RMS_I_B2,RTWMemSecFuncInitTerm,Inherit from model
+Measurement,RMS_I_B2,RTWMemSecFuncExecute,Inherit from model
+Measurement,RMS_I_B2,RTWMemSecDataConstants,Inherit from model
+Measurement,RMS_I_B2,RTWMemSecDataInternal,Inherit from model
+Measurement,RMS_I_B2,RTWMemSecDataParameters,Inherit from model
+Measurement,RMS_I_B2,ContentPreviewEnabled,on
+Measurement,RMS_I_B2,TrueRMS,on
+Measurement,RMS_I_B2,Freq,50
+Measurement,RMS_I_B2,RMSInit,50
+Measurement,RMS_I_B2,Ts,0.0001
+Measurement,RMS_I_T1,RTWMemSecFuncInitTerm,Inherit from model
+Measurement,RMS_I_T1,RTWMemSecFuncExecute,Inherit from model
+Measurement,RMS_I_T1,RTWMemSecDataConstants,Inherit from model
+Measurement,RMS_I_T1,RTWMemSecDataInternal,Inherit from model
+Measurement,RMS_I_T1,RTWMemSecDataParameters,Inherit from model
+Measurement,RMS_I_T1,ContentPreviewEnabled,on
+Measurement,RMS_I_T1,TrueRMS,on
+Measurement,RMS_I_T1,Freq,50
+Measurement,RMS_I_T1,RMSInit,0
+Measurement,RMS_I_T1,Ts,0.0001
+Measurement,RMS_V_33KV_Source,RTWMemSecFuncInitTerm,Inherit from model
+Measurement,RMS_V_33KV_Source,RTWMemSecFuncExecute,Inherit from model
+Measurement,RMS_V_33KV_Source,RTWMemSecDataConstants,Inherit from model
+Measurement,RMS_V_33KV_Source,RTWMemSecDataInternal,Inherit from model
+Measurement,RMS_V_33KV_Source,RTWMemSecDataParameters,Inherit from model
+Measurement,RMS_V_33KV_Source,ContentPreviewEnabled,on
+Measurement,RMS_V_33KV_Source,TrueRMS,on
+Measurement,RMS_V_33KV_Source,Freq,50
+Measurement,RMS_V_33KV_Source,RMSInit,0
+Measurement,RMS_V_33KV_Source,Ts,0.0001
+Measurement,RMS_V_B2,RTWMemSecFuncInitTerm,Inherit from model
+Measurement,RMS_V_B2,RTWMemSecFuncExecute,Inherit from model
+Measurement,RMS_V_B2,RTWMemSecDataConstants,Inherit from model
+Measurement,RMS_V_B2,RTWMemSecDataInternal,Inherit from model
+Measurement,RMS_V_B2,RTWMemSecDataParameters,Inherit from model
+Measurement,RMS_V_B2,ContentPreviewEnabled,on
+Measurement,RMS_V_B2,TrueRMS,on
+Measurement,RMS_V_B2,Freq,50
+Measurement,RMS_V_B2,RMSInit,9000
+Measurement,RMS_V_B2,Ts,0.0001
+Measurement,RMS_V_T1,RTWMemSecFuncInitTerm,Inherit from model
+Measurement,RMS_V_T1,RTWMemSecFuncExecute,Inherit from model
+Measurement,RMS_V_T1,RTWMemSecDataConstants,Inherit from model
+Measurement,RMS_V_T1,RTWMemSecDataInternal,Inherit from model
+Measurement,RMS_V_T1,RTWMemSecDataParameters,Inherit from model
+Measurement,RMS_V_T1,ContentPreviewEnabled,on
+Measurement,RMS_V_T1,TrueRMS,on
+Measurement,RMS_V_T1,Freq,50
+Measurement,RMS_V_T1,RMSInit,0
+Measurement,RMS_V_T1,Ts,0.0001
+Transformer,T1 33KV-11KV,RTWMemSecFuncInitTerm,Inherit from model
+Transformer,T1 33KV-11KV,RTWMemSecFuncExecute,Inherit from model
+Transformer,T1 33KV-11KV,RTWMemSecDataConstants,Inherit from model
+Transformer,T1 33KV-11KV,RTWMemSecDataInternal,Inherit from model
+Transformer,T1 33KV-11KV,RTWMemSecDataParameters,Inherit from model
+Transformer,T1 33KV-11KV,ContentPreviewEnabled,on
+Transformer,T1 33KV-11KV,Winding1Connection,Delta (D11)
+Transformer,T1 33KV-11KV,Winding2Connection,Yg
+Transformer,T1 33KV-11KV,CoreType,Three single-phase transformers
+Transformer,T1 33KV-11KV,SetSaturation,off
+Transformer,T1 33KV-11KV,Hysteresis,off
+Transformer,T1 33KV-11KV,DataFile,'hysteresis'
+Transformer,T1 33KV-11KV,SetInitialFlux,off
+Transformer,T1 33KV-11KV,Measurements,None
+Transformer,T1 33KV-11KV,UNITS,pu
+Transformer,T1 33KV-11KV,NominalPower,"[ 20e6 , 50 ]"
+Transformer,T1 33KV-11KV,Winding1,[33e3 0.002 0.04]
+Transformer,T1 33KV-11KV,Winding2,[11e3 0.002 0.04]
+Transformer,T1 33KV-11KV,Rm,499.98
+Transformer,T1 33KV-11KV,Lm,500
+Transformer,T1 33KV-11KV,L0,0.5
+Transformer,T1 33KV-11KV,Saturation,[0 0;0.0024 1.2;1 1.52]
+Transformer,T1 33KV-11KV,InitialFluxes,"[ 0.8 , -0.8 , 0.7 ]"
+Transformer,T1 33KV-11KV,BreakLoop,off
+Transformer,T1 33KV-11KV,DiscreteSolver,Trapezoidal iterative
+Transformer,T1 33KV-11KV,DataType,off
+Transformer,T1 33KV-11KV,TransfoNumber,1
+Transformer,"T2 33KV-11KV 
+AUX",RTWMemSecFuncInitTerm,Inherit from model
+Transformer,"T2 33KV-11KV 
+AUX",RTWMemSecFuncExecute,Inherit from model
+Transformer,"T2 33KV-11KV 
+AUX",RTWMemSecDataConstants,Inherit from model
+Transformer,"T2 33KV-11KV 
+AUX",RTWMemSecDataInternal,Inherit from model
+Transformer,"T2 33KV-11KV 
+AUX",RTWMemSecDataParameters,Inherit from model
+Transformer,"T2 33KV-11KV 
+AUX",ContentPreviewEnabled,on
+Transformer,"T2 33KV-11KV 
+AUX",Winding1Connection,Delta (D11)
+Transformer,"T2 33KV-11KV 
+AUX",Winding2Connection,Yg
+Transformer,"T2 33KV-11KV 
+AUX",CoreType,Three single-phase transformers
+Transformer,"T2 33KV-11KV 
+AUX",SetSaturation,off
+Transformer,"T2 33KV-11KV 
+AUX",Hysteresis,off
+Transformer,"T2 33KV-11KV 
+AUX",DataFile,'hysteresis'
+Transformer,"T2 33KV-11KV 
+AUX",SetInitialFlux,off
+Transformer,"T2 33KV-11KV 
+AUX",Measurements,None
+Transformer,"T2 33KV-11KV 
+AUX",UNITS,pu
+Transformer,"T2 33KV-11KV 
+AUX",NominalPower,"[ 15e6 , 50 ]"
+Transformer,"T2 33KV-11KV 
+AUX",Winding1,[33e3 0.002 0.04]
+Transformer,"T2 33KV-11KV 
+AUX",Winding2,[11e3 0.002 0.04]
+Transformer,"T2 33KV-11KV 
+AUX",Rm,499.98
+Transformer,"T2 33KV-11KV 
+AUX",Lm,500
+Transformer,"T2 33KV-11KV 
+AUX",L0,0.5
+Transformer,"T2 33KV-11KV 
+AUX",Saturation,[0 0;0.0024 1.2;1 1.52]
+Transformer,"T2 33KV-11KV 
+AUX",InitialFluxes,"[ 0.8 , -0.8 , 0.7 ]"
+Transformer,"T2 33KV-11KV 
+AUX",BreakLoop,off
+Transformer,"T2 33KV-11KV 
+AUX",DiscreteSolver,Trapezoidal iterative
+Transformer,"T2 33KV-11KV 
+AUX",DataType,off
+Transformer,"T2 33KV-11KV 
+AUX",TransfoNumber,1
+TieSwitch,TIE_SWITCH,RTWMemSecFuncInitTerm,Inherit from model
+TieSwitch,TIE_SWITCH,RTWMemSecFuncExecute,Inherit from model
+TieSwitch,TIE_SWITCH,RTWMemSecDataConstants,Inherit from model
+TieSwitch,TIE_SWITCH,RTWMemSecDataInternal,Inherit from model
+TieSwitch,TIE_SWITCH,RTWMemSecDataParameters,Inherit from model
+TieSwitch,TIE_SWITCH,ContentPreviewEnabled,on
+TieSwitch,TIE_SWITCH,InitialState,open
+TieSwitch,TIE_SWITCH,SwitchA,on
+TieSwitch,TIE_SWITCH,SwitchB,on
+TieSwitch,TIE_SWITCH,SwitchC,on
+TieSwitch,TIE_SWITCH,SwitchTimes,[1000000 1000001]
+TieSwitch,TIE_SWITCH,External,on
+TieSwitch,TIE_SWITCH,BreakerResistance,0.01
+TieSwitch,TIE_SWITCH,SnubberResistance,1e5
+TieSwitch,TIE_SWITCH,SnubberCapacitance,1e-9
+TieSwitch,TIE_SWITCH,Measurements,None
+Measurement,"Three-Phase
+V-I Measurement
+Source 33KV",RTWMemSecFuncInitTerm,Inherit from model
+Measurement,"Three-Phase
+V-I Measurement
+Source 33KV",RTWMemSecFuncExecute,Inherit from model
+Measurement,"Three-Phase
+V-I Measurement
+Source 33KV",RTWMemSecDataConstants,Inherit from model
+Measurement,"Three-Phase
+V-I Measurement
+Source 33KV",RTWMemSecDataInternal,Inherit from model
+Measurement,"Three-Phase
+V-I Measurement
+Source 33KV",RTWMemSecDataParameters,Inherit from model
+Measurement,"Three-Phase
+V-I Measurement
+Source 33KV",ContentPreviewEnabled,on
+Measurement,"Three-Phase
+V-I Measurement
+Source 33KV",VoltageMeasurement,phase-to-phase
+Measurement,"Three-Phase
+V-I Measurement
+Source 33KV",SetLabelV,off
+Measurement,"Three-Phase
+V-I Measurement
+Source 33KV",LabelV,Vabc
+Measurement,"Three-Phase
+V-I Measurement
+Source 33KV",Vpu,off
+Measurement,"Three-Phase
+V-I Measurement
+Source 33KV",VpuLL,off
+Measurement,"Three-Phase
+V-I Measurement
+Source 33KV",CurrentMeasurement,yes
+Measurement,"Three-Phase
+V-I Measurement
+Source 33KV",SetLabelI,off
+Measurement,"Three-Phase
+V-I Measurement
+Source 33KV",LabelI,Iabc
+Measurement,"Three-Phase
+V-I Measurement
+Source 33KV",Ipu,off
+Measurement,"Three-Phase
+V-I Measurement
+Source 33KV",Pbase,100e6
+Measurement,"Three-Phase
+V-I Measurement
+Source 33KV",Vbase,500e3
+Measurement,"Three-Phase
+V-I Measurement
+Source 33KV",OutputType,Complex
+Measurement,"Three-Phase
+V-I Measurement
+Source 33KV",PhasorSimulation,off
+Measurement,"Three-Phase
+V-I Measurement
+Source 33KV",PSBequivalent,0
+Measurement,"Three-Phase
+V-I Measurement
+T2 11KV",RTWMemSecFuncInitTerm,Inherit from model
+Measurement,"Three-Phase
+V-I Measurement
+T2 11KV",RTWMemSecFuncExecute,Inherit from model
+Measurement,"Three-Phase
+V-I Measurement
+T2 11KV",RTWMemSecDataConstants,Inherit from model
+Measurement,"Three-Phase
+V-I Measurement
+T2 11KV",RTWMemSecDataInternal,Inherit from model
+Measurement,"Three-Phase
+V-I Measurement
+T2 11KV",RTWMemSecDataParameters,Inherit from model
+Measurement,"Three-Phase
+V-I Measurement
+T2 11KV",ContentPreviewEnabled,on
+Measurement,"Three-Phase
+V-I Measurement
+T2 11KV",VoltageMeasurement,phase-to-phase
+Measurement,"Three-Phase
+V-I Measurement
+T2 11KV",SetLabelV,off
+Measurement,"Three-Phase
+V-I Measurement
+T2 11KV",LabelV,Vabc
+Measurement,"Three-Phase
+V-I Measurement
+T2 11KV",Vpu,off
+Measurement,"Three-Phase
+V-I Measurement
+T2 11KV",VpuLL,off
+Measurement,"Three-Phase
+V-I Measurement
+T2 11KV",CurrentMeasurement,yes
+Measurement,"Three-Phase
+V-I Measurement
+T2 11KV",SetLabelI,off
+Measurement,"Three-Phase
+V-I Measurement
+T2 11KV",LabelI,Iabc
+Measurement,"Three-Phase
+V-I Measurement
+T2 11KV",Ipu,off
+Measurement,"Three-Phase
+V-I Measurement
+T2 11KV",Pbase,100e6
+Measurement,"Three-Phase
+V-I Measurement
+T2 11KV",Vbase,500e3
+Measurement,"Three-Phase
+V-I Measurement
+T2 11KV",OutputType,Complex
+Measurement,"Three-Phase
+V-I Measurement
+T2 11KV",PhasorSimulation,off
+Measurement,"Three-Phase
+V-I Measurement
+T2 11KV",PSBequivalent,0
+Measurement,"Three-Phase
+V-I Measurement 
+T1 11KV",RTWMemSecFuncInitTerm,Inherit from model
+Measurement,"Three-Phase
+V-I Measurement 
+T1 11KV",RTWMemSecFuncExecute,Inherit from model
+Measurement,"Three-Phase
+V-I Measurement 
+T1 11KV",RTWMemSecDataConstants,Inherit from model
+Measurement,"Three-Phase
+V-I Measurement 
+T1 11KV",RTWMemSecDataInternal,Inherit from model
+Measurement,"Three-Phase
+V-I Measurement 
+T1 11KV",RTWMemSecDataParameters,Inherit from model
+Measurement,"Three-Phase
+V-I Measurement 
+T1 11KV",ContentPreviewEnabled,on
+Measurement,"Three-Phase
+V-I Measurement 
+T1 11KV",VoltageMeasurement,phase-to-phase
+Measurement,"Three-Phase
+V-I Measurement 
+T1 11KV",SetLabelV,off
+Measurement,"Three-Phase
+V-I Measurement 
+T1 11KV",LabelV,Vabc
+Measurement,"Three-Phase
+V-I Measurement 
+T1 11KV",Vpu,off
+Measurement,"Three-Phase
+V-I Measurement 
+T1 11KV",VpuLL,off
+Measurement,"Three-Phase
+V-I Measurement 
+T1 11KV",CurrentMeasurement,yes
+Measurement,"Three-Phase
+V-I Measurement 
+T1 11KV",SetLabelI,off
+Measurement,"Three-Phase
+V-I Measurement 
+T1 11KV",LabelI,Iabc
+Measurement,"Three-Phase
+V-I Measurement 
+T1 11KV",Ipu,off
+Measurement,"Three-Phase
+V-I Measurement 
+T1 11KV",Pbase,100e6
+Measurement,"Three-Phase
+V-I Measurement 
+T1 11KV",Vbase,500e3
+Measurement,"Three-Phase
+V-I Measurement 
+T1 11KV",OutputType,Complex
+Measurement,"Three-Phase
+V-I Measurement 
+T1 11KV",PhasorSimulation,off
+Measurement,"Three-Phase
+V-I Measurement 
+T1 11KV",PSBequivalent,0

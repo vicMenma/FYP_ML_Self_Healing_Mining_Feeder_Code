@@ -1,0 +1,47 @@
+Thesis item,Thesis value/name,Actual implementation value/name,Evidence source,Status
+Source nominal voltage,33 kV,33e3 V,model 33KV_Source,MATCH
+Source short-circuit level,500 MVA,ShortCircuitLevel 500e6 (Zs=2.178 ohm),model 33KV_Source,MATCH
+Source X/R ratio,10,XRratio 10,model 33KV_Source,MATCH
+Source impedance mode,SC-level (Zs 2.178 ohm),SpecifyImpedance=on (SC-level mode active),model 33KV_Source,MATCH (stale explicit R/L=0.8929/16.58e-3 are inactive)
+Source grounding,Solidly earthed (Yg),Yg,model 33KV_Source,MATCH
+Source frequency,50 Hz,50 Hz,model 33KV_Source,MATCH
+T1 rating,20 MVA,[20e6 50],model T1,MATCH
+T1 vector group,Dyn11,Winding1 Delta (D11) + Winding2 Yg,model T1,MATCH
+T1 leakage impedance,0.002+j0.040 pu (~8%),Winding1/2 [.. 0.002 0.04],model T1,MATCH
+T1 FLC,349.9/1049.7 A,20MVA at 33/11 kV,derived,MATCH
+T2 rating,15 MVA,[15e6 50],model T2,MATCH
+T2 vector group,Dyn11,Winding1 Delta (D11) + Winding2 Yg,model T2,MATCH
+T2 FLC,262.4/787.3 A,15MVA at 33/11 kV,derived,MATCH
+Line LINE_B1_B2,0.8 km; R 0.12/0.36; L 0.35/1.05; C 0.20/0.10,Length 0.8 [0.12 0.36] [0.35e-3 1.05e-3] [0.20e-6 0.10e-6],model,MATCH
+Line LINE_B1_B3,1.2 km; same R/L/C,Length 1.2 same,model,MATCH
+Line LINE_B1_B4,1.0 km; same R/L/C,Length 1.0 same,model,MATCH
+Line LINE_B5_TIE,0.6 km; same R/L/C,Length 0.6 same,model,MATCH
+Main breaker,CB_MAIN,CB_MAIN,model,MATCH
+Breaker Bus1->B3,CB_BUS1_B3,CB_BUS1_B3,model,MATCH
+Breaker Bus1->B4,CB_BUS1_B4,CB_BUS1_B4,model,MATCH
+Breaker T2->B5,CB_T2_BUS5,CB_T2_BUS5,model,MATCH
+Tie switch name,TIE_SWITCH (Open N/O),TIE_SWITCH InitialState=open,model,MATCH (thesis uses literal block name)
+Breaker states,Closed (tie open),InitialState closed / TIE open,model,MATCH
+Breaker on-resistance,0.01 ohm,BreakerResistance 0.01,model,MATCH
+CB_MAIN snubber,1 MOhm || inf,SnubberResistance 1e6 / Capacitance inf,model,MATCH
+Other breakers snubber,100 kOhm || 1 nF,SnubberResistance 1e5 / Capacitance 1e-9,model,MATCH
+Loads B2/B3/B4/B5,1.95/2.6/3.25/2.145 MW,DL_B2..B5 ActivePower (reset to nominal),model + preflight Ia,MATCH
+Load reactive power,0 (unity pf),no reactive power set,model + Table 3.1,MATCH
+Load configuration,Y (grounded) 3-ph series RLC,Y (grounded),model DL_B2..B5,MATCH
+Fault blocks,Fault_B2..B5,Fault_B2..B5,model,MATCH
+Fault on-resistance,0.001 ohm (swept 0.001-5.0),FaultResistance 0.001; FAULT_RF=[0.001 0.1 0.5 1.0 5.0],model + MASTER_A l.57,MATCH
+Ground resistance,0.001 ohm,GroundResistance 0.001,model,MATCH
+Fault types,SLG(A-g)/LL(A-B)/3PH,FAULT_TYPES={SLG,LL,3PH},MASTER_A l.66,MATCH
+powergui mode,Discrete,SimulationMode Discrete,model powergui,MATCH
+Fixed sample time,5 us (200 kHz),powergui SampleTime 5e-6,model powergui,MATCH
+Simulation duration,2.0 s,StopTime 2.0,model,MATCH
+Dataset size,1000 (900 fault + 100 healthy),1000,MASTER_A + Table 3.3,MATCH
+Feature count,24,24,feature vector,MATCH
+Class count,13,13,dataset labels 0-12,MATCH
+Train/test split,80/20 stratified,60/15 fault + 80/20 healthy; cvpartition rng42,MASTER_B + Table 3.3,MATCH
+Random Forest trees,500,TreeBagger(500),MASTER_B l.81,MATCH
+Features sampled per split,floor(sqrt 24)=4,TreeBagger default sqrt(p),MASTER_B,MATCH
+OOB + permutation importance,Enabled,OOBPrediction on + OOBPredictorImportance on,MASTER_B l.82,MATCH
+Misclassification cost,12.5x (fault->Healthy),Cost C 12.5x,MASTER_B l.83 + report,MATCH
+Random seed,rng(42),rng(42),MASTER_A/B,MATCH
+Test accuracy,100% (0 missed),100%,confusion + ablation,MATCH
