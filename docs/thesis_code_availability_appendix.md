@@ -52,6 +52,14 @@ test), `LIVE_FDIR_DEMO.m` (interactive single-fault demonstration), and
 `getRF.m`, `classifyRF.m`, `reportFDIR.m`, `PATCH_FDIR_IDLE.m` (helpers used by
 the in-model controller).
 
+Three further scripts regenerate or audit material that reaches the document by
+other means: `REGEN_BW.m` redraws the per-class signatures and the fault
+waveforms (Figures 5.1-5.6) in print-safe black and white, using distinct line
+styles so the four buses stay distinguishable in monochrome;
+`CAPTURE_FDIR_RUN_BW.m` does the same for the autonomous run of Figure 5.15,
+re-running the simulation to do so; and `SIMULINK_AUDIT.m` performs a read-only
+inventory of the model's blocks and parameters for traceability.
+
 ## Academic and safety notice
 
 This repository is an academic archive for a simulation-based Bachelor of Engineering thesis. It is
