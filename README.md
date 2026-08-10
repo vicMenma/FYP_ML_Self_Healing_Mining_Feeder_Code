@@ -80,11 +80,22 @@ outputs/
   figures/    chapter_3 .. chapter_6              generated thesis figures + figure_manifest.csv
     thesis_final_named/                           30 final-DOCX figures named by official caption
   summaries/  block discovery, SLG pre-flight, RF metrics, restoration summary/results, pipeline log
+tools/                                 Python generators for the document-only artefacts
+  make_gantt_workbook.py               builds docs/Project_Gantt_Chart.xlsx (Appendix B plan)
+  make_figure_c1_deployment_architecture.py   builds the Appendix C architecture figure
+docs/                                  thesis PDF, bibliography, QA logs, and the project plan
+  Project_Gantt_Chart.xlsx             work breakdown, dates, predecessors, milestones, % complete
 ```
 
-The 30 numbered figures extracted from `Chimundu_VCC_BEng_Thesis_FINAL.docx` are preserved in
+The numbered figures used in the thesis are preserved in
 `outputs/figures/thesis_final_named/`. Their figure-number, caption and filename mapping is listed
 in [`docs/thesis_final_figure_filename_map.md`](docs/thesis_final_figure_filename_map.md).
+
+The Appendix B project plan lives in [`docs/Project_Gantt_Chart.xlsx`](docs/Project_Gantt_Chart.xlsx)
+— a formula-driven work breakdown with start and finish dates, durations, predecessors, milestones
+and percentage completion, plus the Gantt chart drawn from those cells. In the thesis itself the
+Gantt is reproduced as a Word table (Table B.1) rather than an image, so the spreadsheet is the
+editable source of the dates rather than the figure source.
 
 ## Key model parameters
 

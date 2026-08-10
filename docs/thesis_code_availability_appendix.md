@@ -23,6 +23,8 @@ the result summaries — is archived in a public GitHub repository:
 | `outputs/figures/` | The final thesis figures, organised by chapter, plus `figure_manifest.csv`. |
 | `outputs/figures/thesis_final_named/` | The 30 numbered figures extracted from `Chimundu_VCC_BEng_Thesis_FINAL.docx`, named according to their official captions. |
 | `outputs/summaries/` | Block discovery, SLG grounding pre-flight, RF metrics, restoration summary and results, and the pipeline log. |
+| `tools/` | Python generators for the document-only artefacts: the Appendix B plan workbook and the Appendix C architecture figure. |
+| `docs/Project_Gantt_Chart.xlsx` | The project plan behind Table B.1: work breakdown, dates, durations, predecessors, milestones and percentage completion, with the Gantt chart drawn from those cells. |
 
 ## Script execution order
 
@@ -43,6 +45,16 @@ These reuse the existing dataset and trained model (no re-simulation, except the
 | `NOISE_ROBUSTNESS.m` | Evaluates classifier accuracy versus multiplicative measurement noise (Monte-Carlo). |
 | `INTERPOLATION_TEST.m` | Tests generalisation at off-grid fault resistances, load levels and onset times (this one simulates ~72 new cases). |
 | `BASELINE_RULE_VS_RF.m` | Compares the Random Forest with a max current-ratio zone rule and a single decision tree on the held-out test set, quantifying how much the learned model adds on this dataset. |
+
+## Document-only artefacts
+
+These are not part of the MATLAB pipeline; they generate material that appears only in the thesis
+document, and they require Python rather than MATLAB.
+
+| Script | Purpose |
+|---|---|
+| `tools/make_gantt_workbook.py` | Builds `docs/Project_Gantt_Chart.xlsx` (openpyxl). Edit the plan in the spreadsheet rather than re-running this, unless the structure itself changes. |
+| `tools/make_figure_c1_deployment_architecture.py` | Draws Figure C.1, the indicative field deployment architecture (Pillow), in the same black-and-white style as the MATLAB figures. |
 
 ## Academic and safety notice
 
