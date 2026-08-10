@@ -78,7 +78,7 @@ outputs/
   model/      rf_model_v2.mat + confusion/oob/cv/feature-importance mats
   waveforms/  wave_{SLG,LL,3PH}_B{2..5}.mat      12 live-sim fault+restoration captures
   figures/    chapter_3 .. chapter_6              generated thesis figures + figure_manifest.csv
-    thesis_final_named/                           30 final-DOCX figures named by official caption
+    thesis_final_named/                           the thesis figures named by official caption
   summaries/  block discovery, SLG pre-flight, RF metrics, restoration summary/results, pipeline log
 tools/                                 Python generators for the document-only artefacts
   make_gantt_workbook.py               builds docs/Project_Gantt_Chart.xlsx (Appendix B plan)
