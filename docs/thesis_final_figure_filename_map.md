@@ -2,10 +2,10 @@
 
 _Updated: 2026-08-10_
 
-This table maps every official figure caption in
-`Chimundu_VCC_BEng_Thesis_FINAL.docx` to its file in this repository. All 30 numbered figures
-used in the final thesis are provided under `outputs/figures/thesis_final_named/`, grouped by
-chapter and named after their official captions. The unnumbered front-matter image is not included.
+This table maps every official figure caption in the corrected final thesis
+(`docs/Chimundu_VCC_BEng_Thesis_CORRECTED_FINAL.pdf`) to its file in this repository. Every
+numbered figure is provided under `outputs/figures/thesis_final_named/`, grouped by chapter
+and named after its official caption. The unnumbered front-matter image is not included.
 
 - Total figures: **31** (Figure 3.1–3.7, 4.1–4.5, 5.1–5.15, 6.1–6.3, C.1)
 - Appendix B no longer contains a figure: the project Gantt chart is now **Table B.1**, a native
@@ -46,5 +46,8 @@ chapter and named after their official captions. The unnumbered front-matter ima
 | 6.3 | Figure 6.3: Future-work roadmap | `outputs/figures/thesis_final_named/chapter_6/Figure_6_03_future_work_roadmap.png` |
 | C.1 | Figure C.1: Indicative field deployment architecture for the proposed FDIR scheme | `outputs/figures/thesis_final_named/appendix_C/Figure_C_01_indicative_field_deployment_architecture.png` |
 
-All files in this curated set were extracted directly from the final thesis document so the
-repository matches the submitted Word file.
+All files in this curated set are the images embedded in the submitted document, so the
+repository matches it figure for figure. They are cropped to their content: the white border
+was trimmed off each one when the thesis layout was tightened to the page limit, which is why
+some are smaller here than in earlier revisions of this archive. No figure content was
+altered.
